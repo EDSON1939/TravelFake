@@ -1,0 +1,226 @@
+// =============================================================================
+// Microservicio AccountsAndMovements — nucleo de pagos del reto QR Bolivia.
+// Dueno de las cuentas (saldos) y de los movimientos (libro mayor), y unico
+// punto por el que la plata cambia de manos.
+//
+// Los decimales viajan como string: un double redondearia montos y tipos de
+// cambio, y esa diferencia terminaria grabada en el asiento contable.
+// Las fechas viajan como string ISO 8601; proto3 no tiene null para escalares,
+// asi que "" significa "sin valor".
+// =============================================================================
+syntax = "proto3";
+option csharp_namespace = "AccountsAndMovements.Api.Grpc";
+package accounts_movements;
+
+import "base_response.proto";
+
+// ─── Servicio ────────────────────────────────────────────────────────────────
+service AccountsAndMovements {
+    // ── Cuentas ─────────────────────────────────────────────────────────────
+    rpc CreateAccount      (CreateAccountRequestPb)      returns (AccountMutationBaseResponsePb);
+    rpc GetAccount         (GetAccountRequestPb)         returns (GetAccountBaseResponsePb);
+    // Resuelve (titular, moneda) -> cuenta. Lo usan los orquestadores.
+    rpc GetAccountByOwner  (GetAccountByOwnerRequestPb)  returns (GetAccountBaseResponsePb);
+    rpc GetAccountsByOwner (GetAccountsByOwnerRequestPb) returns (GetAccountsBaseResponsePb);
+    // Credito o debito suelto: recargas, ajustes, reversas. Idempotente.
+    rpc ApplyMovement      (ApplyMovementRequestPb)      returns (ApplyMovementBaseResponsePb);
+
+    // ── Pagos QR ────────────────────────────────────────────────────────────
+    // Operacion central: valida, convierte, debita al cliente y acredita al
+    // comercio en una sola transaccion. Idempotente por idempotency_key.
+    rpc ExecuteQrPayment   (ExecuteQrPaymentRequestPb)   returns (PaymentBaseResponsePb);
+    rpc GetPayment         (GetPaymentRequestPb)         returns (PaymentBaseResponsePb);
+
+    // ── Movimientos ─────────────────────────────────────────────────────────
+    rpc GetMovements       (GetMovementsRequestPb)       returns (GetMovementsBaseResponsePb);
+    // Historial del titular con filtros de fecha y estado.
+    rpc GetHistory         (GetHistoryRequestPb)         returns (GetMovementsBaseResponsePb);
+}
+
+// ─── Requests ────────────────────────────────────────────────────────────────
+message CreateAccountRequestPb {
+    string owner_type      = 1;  // CLIENTE | COMERCIO
+    int64  owner_id        = 2;
+    string coin_code       = 3;  // PEN, USD, BOB...
+    string initial_balance = 4;  // decimal como string, 0 = sin apertura
+}
+
+message GetAccountRequestPb {
+    string number = 1;
+}
+
+message GetAccountByOwnerRequestPb {
+    string owner_type = 1;
+    int64  owner_id   = 2;
+    string coin_code  = 3;
+}
+
+message GetAccountsByOwnerRequestPb {
+    string owner_type  = 1;
+    int64  owner_id    = 2;
+    bool   only_active = 3;
+}
+
+message ApplyMovementRequestPb {
+    string account_number  = 1;
+    string type            = 2;  // CREDITO | DEBITO
+    string amount          = 3;  // decimal como string
+    string reference       = 4;
+    string idempotency_key = 5;  // clave de idempotencia del llamador
+    string description     = 6;
+}
+
+message ExecuteQrPaymentRequestPb {
+    int64  client_id       = 1;
+    string qr_code         = 2;
+    string amount          = 3;  // monto en la moneda del cliente
+    string currency_code   = 4;  // moneda del cliente (ej: USD)
+    string idempotency_key = 5;  // ej: TX-2026-000001
+    string description     = 6;
+}
+
+message GetPaymentRequestPb {
+    // Uno de los dos. Si vienen ambos, manda transaction_code.
+    string transaction_code = 1;
+    string idempotency_key  = 2;
+}
+
+message GetMovementsRequestPb {
+    string account_number = 1;
+    int32  page_number    = 2;
+    int32  page_size      = 3;
+}
+
+message GetHistoryRequestPb {
+    string owner_type  = 1;
+    int64  owner_id    = 2;
+    // Fechas ISO 8601. Vacias = sin filtro. La final se toma inclusive.
+    string date_from   = 3;
+    string date_to     = 4;
+    // PENDING | COMPLETED | FAILED | CANCELLED. Vacio = todos.
+    string status      = 5;
+    int32  page_number = 6;
+    int32  page_size   = 7;
+}
+
+// ─── Data ────────────────────────────────────────────────────────────────────
+message AccountDataPb {
+    int64  account_id = 1;
+    string number     = 2;
+    string owner_type = 3;
+    int64  owner_id   = 4;
+    int64  coin_id    = 5;
+    string coin_code  = 6;
+    string balance    = 7;
+    bool   is_active  = 8;
+    string created_at = 9;
+    // Vacios cuando nunca se actualizo / no esta eliminada.
+    string updated_at = 10;
+    string deleted_at = 11;
+}
+
+message MovementDataPb {
+    int64  movement_id       = 1;
+    string account_number    = 2;
+    string owner_type        = 3;
+    int64  owner_id          = 4;
+    string type              = 5;  // CREDITO | DEBITO
+    string status            = 6;
+    string amount            = 7;  // monto en la moneda de la cuenta
+    string balance_before    = 8;
+    string balance_after     = 9;
+    // Conversion congelada al momento de la operacion.
+    string original_amount   = 10;
+    string original_currency = 11;
+    string exchange_rate     = 12;
+    string converted_amount  = 13;
+    string target_currency   = 14;
+    int64  merchant_id       = 15;  // 0 cuando el asiento no es de un pago QR
+    string qr_code           = 16;
+    string reference         = 17;
+    string idempotency_key   = 18;
+    string transaction_code  = 19;
+    string description       = 20;
+    string created_at        = 21;
+}
+
+message MovementAppliedDataPb {
+    int64  movement_id    = 1;
+    string account_number = 2;
+    string balance        = 3;
+}
+
+message PaymentDataPb {
+    string transaction_code       = 1;
+    int64  movement_id            = 2;
+    int64  client_id              = 3;
+    string client_account_number  = 4;
+    int64  merchant_id            = 5;
+    // Vacio al consultar una operacion: solo viaja al ejecutar el pago.
+    string merchant_name          = 6;
+    string merchant_account_number = 7;
+    string qr_code                = 8;
+    string original_amount        = 9;   // ej: 20
+    string original_currency      = 10;  // ej: USD
+    string exchange_rate          = 11;  // ej: 6.96
+    string converted_amount       = 12;  // ej: 139.20
+    string target_currency        = 13;  // ej: BOB
+    string client_balance         = 14;  // saldo del cliente tras el pago
+    string status                 = 15;
+    string reference              = 16;
+    string idempotency_key        = 17;
+    string description            = 18;
+    string created_at             = 19;
+    // true = la clave ya se habia usado y esta es la respuesta de la operacion
+    // original: al cliente NO se le cobro de nuevo.
+    bool   is_duplicate           = 20;
+}
+
+// ─── Responses ───────────────────────────────────────────────────────────────
+message GetAccountBaseResponsePb {
+    string                          message     = 1;
+    AccountDataPb                   data        = 2;
+    repeated base_response.ErrorPb  errors      = 3;
+    base_response.ExceptionDetailPb exception   = 4;
+    string                          status_code = 5;
+}
+
+message GetAccountsBaseResponsePb {
+    string                          message     = 1;
+    repeated AccountDataPb          data        = 2;
+    repeated base_response.ErrorPb  errors      = 3;
+    base_response.ExceptionDetailPb exception   = 4;
+    string                          status_code = 5;
+}
+
+message GetMovementsBaseResponsePb {
+    string                          message     = 1;
+    repeated MovementDataPb         data        = 2;
+    repeated base_response.ErrorPb  errors      = 3;
+    base_response.ExceptionDetailPb exception   = 4;
+    string                          status_code = 5;
+}
+
+message AccountMutationBaseResponsePb {
+    string                          message     = 1;
+    int64                           data        = 2;
+    repeated base_response.ErrorPb  errors      = 3;
+    base_response.ExceptionDetailPb exception   = 4;
+    string                          status_code = 5;
+}
+
+message ApplyMovementBaseResponsePb {
+    string                          message     = 1;
+    MovementAppliedDataPb           data        = 2;
+    repeated base_response.ErrorPb  errors      = 3;
+    base_response.ExceptionDetailPb exception   = 4;
+    string                          status_code = 5;
+}
+
+message PaymentBaseResponsePb {
+    string                          message     = 1;
+    PaymentDataPb                   data        = 2;
+    repeated base_response.ErrorPb  errors      = 3;
+    base_response.ExceptionDetailPb exception   = 4;
+    string                          status_code = 5;
+}

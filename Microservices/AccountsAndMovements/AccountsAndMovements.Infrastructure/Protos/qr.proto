@@ -1,0 +1,59 @@
+// =============================================================================
+// Contrato CONSUMIDO del microservicio de QR (reto QR Bolivia).
+//
+// MarkQrAsUsed se llama DESPUES de que el dinero ya se movio. Que ese QR no
+// pueda pagarse dos veces lo garantiza el indice unico UQ_PAY_MOVIMIENTO_QR de
+// este servicio; esta llamada solo mantiene al servicio de QR al dia.
+// =============================================================================
+syntax = "proto3";
+option csharp_namespace = "Qr.Api.Grpc";
+package qr;
+
+import "base_response.proto";
+
+service Qr {
+    rpc GetQr        (GetQrRequestPb)        returns (GetQrBaseResponsePb);
+    rpc MarkQrAsUsed (MarkQrAsUsedRequestPb) returns (QrMutationBaseResponsePb);
+}
+
+message GetQrRequestPb {
+    string code = 1;
+}
+
+message MarkQrAsUsedRequestPb {
+    string code             = 1;
+    // Codigo de la operacion que lo consumio, para trazabilidad cruzada.
+    string transaction_code = 2;
+}
+
+message QrDataPb {
+    string code          = 1;
+    int64  merchant_id   = 2;
+    string merchant_name = 3;
+    // Monto que cobra el QR, decimal serializado como string.
+    string amount        = 4;
+    // Moneda del cobro: BOB.
+    string currency_code = 5;
+    string reference     = 6;
+    // ACTIVE | EXPIRED | USED | CANCELLED
+    string status        = 7;
+    string created_at    = 8;
+    // Vacio cuando el QR no expira.
+    string expires_at    = 9;
+}
+
+message GetQrBaseResponsePb {
+    string                          message     = 1;
+    QrDataPb                        data        = 2;
+    repeated base_response.ErrorPb  errors      = 3;
+    base_response.ExceptionDetailPb exception   = 4;
+    string                          status_code = 5;
+}
+
+message QrMutationBaseResponsePb {
+    string                          message     = 1;
+    int64                           data        = 2;
+    repeated base_response.ErrorPb  errors      = 3;
+    base_response.ExceptionDetailPb exception   = 4;
+    string                          status_code = 5;
+}

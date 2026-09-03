@@ -1,0 +1,38 @@
+// =============================================================================
+// Contrato CONSUMIDO del microservicio de Comercios (reto QR Bolivia).
+// Solo los rpc que este microservicio usa para validar al comercio antes de
+// acreditarle un cobro.
+// =============================================================================
+syntax = "proto3";
+option csharp_namespace = "Merchant.Api.Grpc";
+package merchant;
+
+import "base_response.proto";
+
+service Merchant {
+    rpc GetMerchantById (GetMerchantByIdRequestPb) returns (GetMerchantBaseResponsePb);
+}
+
+message GetMerchantByIdRequestPb {
+    int64 merchant_id = 1;
+}
+
+message MerchantDataPb {
+    int64  merchant_id   = 1;
+    string name          = 2;
+    // NIT / identificador tributario del comercio boliviano.
+    string nit           = 3;
+    // Por regla del reto, siempre BOB.
+    string currency_code = 4;
+    // ACTIVE | INACTIVE
+    string status        = 5;
+    string created_at    = 6;
+}
+
+message GetMerchantBaseResponsePb {
+    string                          message     = 1;
+    MerchantDataPb                  data        = 2;
+    repeated base_response.ErrorPb  errors      = 3;
+    base_response.ExceptionDetailPb exception   = 4;
+    string                          status_code = 5;
+}

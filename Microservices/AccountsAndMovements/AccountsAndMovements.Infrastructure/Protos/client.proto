@@ -1,0 +1,40 @@
+// =============================================================================
+// Contrato CONSUMIDO del microservicio de Clientes (reto QR Bolivia).
+// Copia del .proto que publica ese servicio: aqui solo se declaran los rpc que
+// este microservicio realmente usa. Si Clientes cambia el contrato, se
+// reemplaza este archivo y se ajusta ExternalServices/ClientService.cs.
+// =============================================================================
+syntax = "proto3";
+option csharp_namespace = "Client.Api.Grpc";
+package client;
+
+import "base_response.proto";
+
+service Client {
+    rpc GetClientById (GetClientByIdRequestPb) returns (GetClientBaseResponsePb);
+}
+
+message GetClientByIdRequestPb {
+    int64 client_id = 1;
+}
+
+message ClientDataPb {
+    int64  client_id     = 1;
+    string first_name    = 2;
+    string last_name     = 3;
+    string email         = 4;
+    // Pais y moneda del cliente extranjero (ej: PE / PEN).
+    string country_code  = 5;
+    string currency_code = 6;
+    // ACTIVE | INACTIVE
+    string status        = 7;
+    string created_at    = 8;
+}
+
+message GetClientBaseResponsePb {
+    string                          message     = 1;
+    ClientDataPb                    data        = 2;
+    repeated base_response.ErrorPb  errors      = 3;
+    base_response.ExceptionDetailPb exception   = 4;
+    string                          status_code = 5;
+}

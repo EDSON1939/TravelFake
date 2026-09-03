@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Google.Protobuf" Version="3.29.3" />
+    <PackageReference Include="Grpc.Net.ClientFactory" Version="2.67.0" />
+    <PackageReference Include="Grpc.Tools" Version="2.69.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Protobuf Include="Protos\client.proto" GrpcServices="Client"
+              AdditionalImportDirs="..\..\..\YastaCoin\Shared\Core.Domain\Grpc\Protobuf\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Auth.Domain\Auth.Domain.csproj" />
+    <ProjectReference Include="..\..\..\YastaCoin\Shared\Core.Infrastructure\Core.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

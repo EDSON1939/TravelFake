@@ -1,0 +1,38 @@
+using Auth.Domain.Entities;
+using Core.Infrastructure.Database.Queries;
+using Dapper;
+using System.Data;
+
+namespace Auth.Infrastructure.Persistence.Queries;
+
+public class GetUserByUsernameQuery(string username) : QuerySingleBase<UserEntity>
+{
+    // El hash sale de la base pero no sale de Auth: el handler lo usa para
+    // verificar la contraseña y nunca lo pone en la respuesta.
+    public override string SqlStatement => @"
+        SELECT USUA_ID_IT                AS UserId,
+               USUA_USERNAME_VC          AS Username,
+               USUA_PASSWORD_HASH_VC     AS PasswordHash,
+               USUA_CLIENTE_ID_IT        AS ClientId,
+               USUA_NOMBRE_VC            AS FullName,
+               USUA_ROL_VC               AS Role,
+               USUA_ACTIVO_BT            AS IsActive,
+               USUA_INTENTOS_FALLIDOS_IT AS FailedAttempts,
+               USUA_BLOQUEADO_HASTA_DT   AS LockedUntil,
+               USUA_ULTIMO_ACCESO_DT     AS LastAccessAt,
+               USUA_FECHA_CREACION_DT    AS CreatedAt,
+               USUA_FECHA_ACTUALIZACION_DT AS UpdatedAt,
+               USUA_FECHA_ELIMINACION_DT   AS DeletedAt
+        FROM   coin.USUARIO
+        WHERE  USUA_USERNAME_VC         = @Username
+          AND  USUA_FECHA_ELIMINACION_DT IS NULL";
+
+    public override DynamicParameters? Parameters { get; } = BuildParameters(username);
+
+    private static DynamicParameters BuildParameters(string username)
+    {
+        var p = new DynamicParameters();
+        p.Add("@Username", username, DbType.AnsiString, size: 50);
+        return p;
+    }
+}

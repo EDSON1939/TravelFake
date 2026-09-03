@@ -1,0 +1,59 @@
+// =============================================================================
+// Contrato CONSUMIDO del microservicio de Monedas (reto QR Bolivia).
+//
+// GetExchangeRate devuelve el tipo de cambio simulado (ej: 1 USD = 6.96 BOB).
+// El valor que responde se congela en el asiento contable: la operacion
+// historica no cambia si despues se actualiza la tabla de cambios.
+// =============================================================================
+syntax = "proto3";
+option csharp_namespace = "Currency.Api.Grpc";
+package currency;
+
+import "base_response.proto";
+
+service Currency {
+    rpc GetCurrency     (GetCurrencyRequestPb)     returns (GetCurrencyBaseResponsePb);
+    rpc GetExchangeRate (GetExchangeRateRequestPb) returns (GetExchangeRateBaseResponsePb);
+}
+
+message GetCurrencyRequestPb {
+    string code = 1;
+}
+
+message GetExchangeRateRequestPb {
+    // Moneda de origen (ej: USD) y destino (ej: BOB).
+    string from_code = 1;
+    string to_code   = 2;
+}
+
+message CurrencyDataPb {
+    int64  currency_id = 1;
+    string name        = 2;
+    string code        = 3;
+    string symbol      = 4;
+    bool   is_active   = 5;
+}
+
+message ExchangeRateDataPb {
+    string from_code = 1;
+    string to_code   = 2;
+    // Decimal serializado como string para no perder precision en el cable.
+    string rate      = 3;
+    string valid_at  = 4;
+}
+
+message GetCurrencyBaseResponsePb {
+    string                          message     = 1;
+    CurrencyDataPb                  data        = 2;
+    repeated base_response.ErrorPb  errors      = 3;
+    base_response.ExceptionDetailPb exception   = 4;
+    string                          status_code = 5;
+}
+
+message GetExchangeRateBaseResponsePb {
+    string                          message     = 1;
+    ExchangeRateDataPb              data        = 2;
+    repeated base_response.ErrorPb  errors      = 3;
+    base_response.ExceptionDetailPb exception   = 4;
+    string                          status_code = 5;
+}

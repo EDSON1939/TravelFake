@@ -1,0 +1,24 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Google.Protobuf" Version="3.29.3" />
+    <PackageReference Include="Grpc.Net.ClientFactory" Version="2.67.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="7.0.0" />
+    <PackageReference Include="FluentValidation" Version="11.11.0" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="11.11.0" />
+    <PackageReference Include="Swashbuckle.AspNetCore.Versioning" Version="2.0.0" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.2.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Core.Domain\Core.Domain.csproj" />
+  </ItemGroup>
+
+</Project>
