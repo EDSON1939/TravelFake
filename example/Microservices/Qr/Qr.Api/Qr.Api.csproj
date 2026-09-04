@@ -18,11 +18,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Protobuf Include="Protos\commerce.proto" GrpcServices="Server" AdditionalImportDirs="..\..\..\YastaCoin\Shared\Core.Domain\Grpc\Protobuf\" />
+    <Protobuf Include="Protos\qr.proto" GrpcServices="Server"
+              AdditionalImportDirs="..\..\..\YastaCoin\Shared\Core.Domain\Grpc\Protobuf\" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Commerce.Application\Commerce.Application.csproj" />
+    <ProjectReference Include="..\Qr.Application\Qr.Application.csproj" />
     <ProjectReference Include="..\..\..\YastaCoin\Shared\Core.AuditTrail\Core.AuditTrail.csproj" />
     <ProjectReference Include="..\..\..\YastaCoin\Shared\Core.ShareKernel\Core.ShareKernel.csproj" />
     <ProjectReference Include="..\..\..\YastaCoin\Shared\Core.Domain\Core.Domain.csproj" />

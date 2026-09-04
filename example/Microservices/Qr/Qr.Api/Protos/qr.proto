@@ -1,0 +1,67 @@
+syntax = "proto3";
+option csharp_namespace = "Qr.Api.Grpc";
+package qr;
+
+import "base_response.proto";
+
+// ─── Servicio ────────────────────────────────────────────────────────────────
+service Qr {
+    rpc CreateQr    (CreateQrRequestPb)     returns (QrMutationBaseResponsePb);
+    rpc GetQrById   (GetQrByIdRequestPb)    returns (GetQrBaseResponsePb);
+    rpc GetQrByCode (GetQrByCodeRequestPb)  returns (GetQrBaseResponsePb);
+    rpc ConsumeQr   (ConsumeQrRequestPb)    returns (QrMutationBaseResponsePb);
+}
+
+// ─── Requests ────────────────────────────────────────────────────────────────
+message CreateQrRequestPb {
+    int64  comercio_id       = 1;
+    string monto             = 2;  // decimal como string (ej: 12.50)
+    string tipo              = 3;  // UNICO | MULTIPLE
+    string fecha_expiracion  = 4;  // ISO 8601
+}
+
+message GetQrByIdRequestPb {
+    int64 id = 1;
+}
+
+message GetQrByCodeRequestPb {
+    string code = 1;
+}
+
+message ConsumeQrRequestPb {
+    string code = 1;
+}
+
+// ─── Data ────────────────────────────────────────────────────────────────────
+message QrDataPb {
+    int64  qr_id                = 1;
+    string codigo               = 2;
+    int64  comercio_id          = 3;
+    string monto                = 4;
+    string tipo                 = 5;  // UNICO | MULTIPLE
+    string fecha_expiracion     = 6;
+    string estado               = 7;  // ACTIVE | USED | EXPIRED
+    bool   activo               = 8;
+    // Vacio cuando nunca se actualizo.
+    string fecha_actualizacion  = 9;
+    string fecha_creacion       = 10;
+    // true si el estado es ACTIVE (QR válido)
+    bool   es_valido            = 11;
+}
+
+// ─── Responses ───────────────────────────────────────────────────────────────
+message GetQrBaseResponsePb {
+    string                          message     = 1;
+    QrDataPb                        data        = 2;
+    repeated base_response.ErrorPb  errors      = 3;
+    base_response.ExceptionDetailPb exception   = 4;
+    string                          status_code = 5;
+}
+
+message QrMutationBaseResponsePb {
+    string                          message     = 1;
+    int64                           data        = 2;
+    repeated base_response.ErrorPb  errors      = 3;
+    base_response.ExceptionDetailPb exception   = 4;
+    string                          status_code = 5;
+}

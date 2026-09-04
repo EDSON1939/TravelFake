@@ -1,0 +1,88 @@
+// =============================================================================
+// Microservicio Commerce — catalogo de comercios.
+// Copia del contrato del servidor (Commerce.Api/Protos/commerce.proto) para
+// consumir el endpoint GetCommerceById desde el microservicio Qr (validar
+// comercio al crear un QR).
+// =============================================================================
+syntax = "proto3";
+option csharp_namespace = "Qr.Infrastructure.Grpc";
+package commerce;
+
+import "base_response.proto";
+
+// ─── Servicio ────────────────────────────────────────────────────────────────
+service Commerce {
+    rpc CreateCommerce       (CreateCommerceRequestPb)       returns (CommerceMutationBaseResponsePb);
+    rpc GetCommerceById      (GetCommerceByIdRequestPb)      returns (GetCommerceBaseResponsePb);
+    rpc GetCommerceList      (GetCommerceListRequestPb)      returns (GetCommerceListBaseResponsePb);
+    rpc UpdateCommerce       (UpdateCommerceRequestPb)       returns (CommerceMutationBaseResponsePb);
+    rpc UpdateCommerceStatus (UpdateCommerceStatusRequestPb) returns (CommerceMutationBaseResponsePb);
+}
+
+// ─── Requests ────────────────────────────────────────────────────────────────
+message CreateCommerceRequestPb {
+    string name = 1;
+    string nit  = 2;
+}
+
+message GetCommerceByIdRequestPb {
+    int64 id = 1;
+}
+
+message GetCommerceListRequestPb {
+    string name        = 1;
+    bool   only_active = 2;
+    optional int32 page_number = 3;
+    optional int32 page_size   = 4;
+}
+
+message UpdateCommerceRequestPb {
+    int64  id   = 1;
+    string name = 2;
+    string nit  = 3;
+}
+
+message UpdateCommerceStatusRequestPb {
+    int64 id         = 1;
+    bool  is_active  = 2;
+}
+
+// ─── Data ────────────────────────────────────────────────────────────────────
+message CommerceDataPb {
+    int64  id                  = 1;
+    string name                = 2;
+    string nit                 = 3;
+    reserved 4;  // cuenta_id eliminado
+    bool   is_active           = 5;
+    string fecha_creacion      = 6;
+    string fecha_actualizacion = 7;
+}
+
+// ─── Responses ───────────────────────────────────────────────────────────────
+message GetCommerceBaseResponsePb {
+    string                          message     = 1;
+    CommerceDataPb                  data        = 2;
+    repeated base_response.ErrorPb  errors      = 3;
+    base_response.ExceptionDetailPb exception   = 4;
+    string                          status_code = 5;
+}
+
+message GetCommerceListBaseResponsePb {
+    string                          message     = 1;
+    repeated CommerceDataPb         data        = 2;
+    int32                           page_number = 3;
+    int32                           page_size   = 4;
+    int32                           total_count = 5;
+    int32                           total_pages = 6;
+    repeated base_response.ErrorPb  errors      = 7;
+    base_response.ExceptionDetailPb exception   = 8;
+    string                          status_code = 9;
+}
+
+message CommerceMutationBaseResponsePb {
+    string                          message     = 1;
+    int64                           data        = 2;
+    repeated base_response.ErrorPb  errors      = 3;
+    base_response.ExceptionDetailPb exception   = 4;
+    string                          status_code = 5;
+}
