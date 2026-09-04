@@ -24,6 +24,15 @@ public static class DependencyInjection
 
         services.AddScoped<ICountryService, CountryService>();
 
+        // ── Canal gRPC hacia el microservicio Auth ───────────────────────────
+        // Lee BaseAddress (y PolicyConfiguration si existe) de Connections:Auth.
+        // Se usa al registrar un cliente, para crearle su usuario de acceso.
+        services.AddGrpcClientDependence<global::Client.Infrastructure.Grpc.Auth.AuthClient>(
+            nameof(global::Client.Infrastructure.Grpc.Auth.AuthClient),
+            configuration.GetSection("Connections:Auth"));
+
+        services.AddScoped<IAuthService, AuthService>();
+
         return services;
     }
 }

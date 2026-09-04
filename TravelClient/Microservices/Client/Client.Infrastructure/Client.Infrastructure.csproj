@@ -18,6 +18,8 @@
   <ItemGroup>
     <!-- Contrato de TravelCountry: solo se genera el consumidor (GrpcServices="Client") -->
     <Protobuf Include="Protos\country.proto" GrpcServices="Client" AdditionalImportDirs="..\..\..\YastaCoin\Shared\Core.Domain\Grpc\Protobuf\" />
+    <!-- Contrato de Auth: solo se genera el consumidor (GrpcServices="Client") -->
+    <Protobuf Include="Protos\auth.proto" GrpcServices="Client" AdditionalImportDirs="..\..\..\YastaCoin\Shared\Core.Domain\Grpc\Protobuf\" />
   </ItemGroup>
 
   <ItemGroup>
