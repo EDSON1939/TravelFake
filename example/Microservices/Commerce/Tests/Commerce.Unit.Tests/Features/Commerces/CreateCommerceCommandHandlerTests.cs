@@ -23,7 +23,7 @@ public class CreateCommerceCommandHandlerTests
     {
         _repository.ExistsByNit("900123456", default).Returns(false);
         _repository.Insert(Arg.Any<Domain.Entities.CommerceEntity>(), default).Returns(7L);
-        _accountsService.CreateMerchantAccount(7, "0", Arg.Any<CancellationToken>())
+        _accountsService.CreateCommerceAccount(7, "0", Arg.Any<CancellationToken>())
             .Returns(BaseResponse<long>.Success(100L));
 
         var result = await _handler.Handle(
@@ -45,7 +45,7 @@ public class CreateCommerceCommandHandlerTests
         result.StatusCode.Should().Be(Domain.Errors.ErrorCode.COMMERCE_DUPLICATE);
         result.Data.Should().Be(0);
         _repository.DidNotReceive().Insert(Arg.Any<Domain.Entities.CommerceEntity>(), Arg.Any<CancellationToken>());
-        _accountsService.DidNotReceive().CreateMerchantAccount(Arg.Any<long>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
+        _accountsService.DidNotReceive().CreateCommerceAccount(Arg.Any<long>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -58,7 +58,7 @@ public class CreateCommerceCommandHandlerTests
             new CreateCommerceCommand("Tienda Norte", "900123457"), default);
 
         result.StatusCode.Should().Be(Domain.Errors.ErrorCode.INSERT_FAILED);
-        _accountsService.DidNotReceive().CreateMerchantAccount(Arg.Any<long>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
+        _accountsService.DidNotReceive().CreateCommerceAccount(Arg.Any<long>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -66,7 +66,7 @@ public class CreateCommerceCommandHandlerTests
     {
         _repository.ExistsByNit("900123457", default).Returns(false);
         _repository.Insert(Arg.Any<Domain.Entities.CommerceEntity>(), default).Returns(7L);
-        _accountsService.CreateMerchantAccount(7, "0", Arg.Any<CancellationToken>())
+        _accountsService.CreateCommerceAccount(7, "0", Arg.Any<CancellationToken>())
             .Returns(BaseResponse<long>.Error(ErrorCode.ERR001, ErrorMessage.ERR001));
 
         var result = await _handler.Handle(
@@ -80,7 +80,7 @@ public class CreateCommerceCommandHandlerTests
     {
         _repository.ExistsByNit(Arg.Any<string>(), default).Returns(false);
         _repository.Insert(Arg.Any<Domain.Entities.CommerceEntity>(), default).Returns(7L);
-        _accountsService.CreateMerchantAccount(7, "0", Arg.Any<CancellationToken>())
+        _accountsService.CreateCommerceAccount(7, "0", Arg.Any<CancellationToken>())
             .Returns(BaseResponse<long>.Success(100L));
         Domain.Entities.CommerceEntity? captured = null;
         await _repository.Insert(Arg.Do<Domain.Entities.CommerceEntity>(e => captured = e), default);
@@ -89,6 +89,6 @@ public class CreateCommerceCommandHandlerTests
 
         captured?.IsActive.Should().BeTrue();
         result.StatusCode.Should().Be(ErrorCode.SUC000);
-        await _accountsService.Received(1).CreateMerchantAccount(7, "0", Arg.Any<CancellationToken>());
+        await _accountsService.Received(1).CreateCommerceAccount(7, "0", Arg.Any<CancellationToken>());
     }
 }

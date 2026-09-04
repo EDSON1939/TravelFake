@@ -15,15 +15,15 @@ public class AccountsAndMovementsService : IAccountsAndMovementsService
         _client = grpcClient.Client;
     }
 
-    async Task<BaseResponse<long>> IAccountsAndMovementsService.CreateMerchantAccount(
-        long merchantId, string initialBalance, CancellationToken ct)
+    async Task<BaseResponse<long>> IAccountsAndMovementsService.CreateCommerceAccount(
+        long commerceId, string initialBalance, CancellationToken ct)
     {
         try
         {
-            var response = await _client.CreateMerchantAccountAsync(
-                new CreateMerchantAccountRequestPb
+            var response = await _client.CreateCommerceAccountAsync(
+                new CreateCommerceAccountRequestPb
                 {
-                    MerchantId     = merchantId,
+                    CommerceId     = commerceId,
                     InitialBalance = initialBalance
                 }, cancellationToken: ct);
 
@@ -45,10 +45,10 @@ public class AccountsAndMovementsService : IAccountsAndMovementsService
         }
     }
 
-    public async Task<AccountMutationBaseResponsePb> CreateMerchantAccount(
-        CreateMerchantAccountRequestPb request, Metadata? headers = null, CancellationToken ct = default)
+    public async Task<AccountMutationBaseResponsePb> CreateCommerceAccount(
+        CreateCommerceAccountRequestPb request, Metadata? headers = null, CancellationToken ct = default)
     {
-        return await _client.CreateMerchantAccountAsync(request, headers: headers, cancellationToken: ct);
+        return await _client.CreateCommerceAccountAsync(request, headers: headers, cancellationToken: ct);
     }
 
     public async Task<AccountMutationBaseResponsePb> CreateClientAccount(
@@ -75,16 +75,16 @@ public class AccountsAndMovementsService : IAccountsAndMovementsService
         return await _client.GetMyAccountsAsync(request, headers: headers, cancellationToken: ct);
     }
 
-    public async Task<GetAccountBaseResponsePb> GetMerchantAccount(
-        GetMerchantAccountRequestPb request, Metadata? headers = null, CancellationToken ct = default)
+    public async Task<GetAccountBaseResponsePb> GetCommerceAccount(
+        GetCommerceAccountRequestPb request, Metadata? headers = null, CancellationToken ct = default)
     {
-        return await _client.GetMerchantAccountAsync(request, headers: headers, cancellationToken: ct);
+        return await _client.GetCommerceAccountAsync(request, headers: headers, cancellationToken: ct);
     }
 
-    public async Task<GetAccountsBaseResponsePb> GetMerchantAccounts(
-        GetMerchantAccountsRequestPb request, Metadata? headers = null, CancellationToken ct = default)
+    public async Task<GetAccountsBaseResponsePb> GetCommerceAccounts(
+        GetCommerceAccountsRequestPb request, Metadata? headers = null, CancellationToken ct = default)
     {
-        return await _client.GetMerchantAccountsAsync(request, headers: headers, cancellationToken: ct);
+        return await _client.GetCommerceAccountsAsync(request, headers: headers, cancellationToken: ct);
     }
 
     public async Task<ApplyMovementBaseResponsePb> ApplyMovement(
@@ -117,9 +117,9 @@ public class AccountsAndMovementsService : IAccountsAndMovementsService
         return await _client.GetMyHistoryAsync(request, headers: headers, cancellationToken: ct);
     }
 
-    public async Task<GetMovementsBaseResponsePb> GetMerchantHistory(
-        GetMerchantHistoryRequestPb request, Metadata? headers = null, CancellationToken ct = default)
+    public async Task<GetMovementsBaseResponsePb> GetCommerceHistory(
+        GetCommerceHistoryRequestPb request, Metadata? headers = null, CancellationToken ct = default)
     {
-        return await _client.GetMerchantHistoryAsync(request, headers: headers, cancellationToken: ct);
+        return await _client.GetCommerceHistoryAsync(request, headers: headers, cancellationToken: ct);
     }
 }

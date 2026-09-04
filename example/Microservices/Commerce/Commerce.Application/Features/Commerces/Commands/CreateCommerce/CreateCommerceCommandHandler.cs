@@ -30,7 +30,7 @@ public class CreateCommerceCommandHandler(
                 Domain.Errors.ErrorCode.INSERT_FAILED,
                 Domain.Errors.ErrorMessage.INSERT_FAILED);
 
-        var account = await accountsAndMovementsService.CreateMerchantAccount(id, "0", ct);
+        var account = await accountsAndMovementsService.CreateCommerceAccount(id, "0", ct);
         if (!account.IsSuccess())
             return BaseResponse<long>.Error(
                 account.StatusCode,
