@@ -9,7 +9,7 @@
 // asi que "" significa "sin valor".
 // =============================================================================
 syntax = "proto3";
-option csharp_namespace = "AccountsAndMovements.Api.Grpc";
+option csharp_namespace = "Commerce.Infrastructure.Grpc";
 package accounts_movements;
 
 import "base_response.proto";

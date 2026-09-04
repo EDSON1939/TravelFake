@@ -4,7 +4,6 @@
 -- Parametros:
 --   @COME_NOMBRE_VC  NVARCHAR(50)   Nombre del comercio
 --   @COME_NIT_VC     VARCHAR(13)    NIT del comercio (único)
---   @COME_CUENTA_ID_IT BIGINT       Identificador de la cuenta (TODO: se asignará)
 -- Retorna: BIGINT — ID del comercio insertado (SCOPE_IDENTITY)
 -- =============================================================================
 
@@ -18,8 +17,7 @@ GO
 
 CREATE PROCEDURE commerce.INSERT_COMERCIO
     @COME_NOMBRE_VC     NVARCHAR(50),
-    @COME_NIT_VC        VARCHAR(13),
-    @COME_CUENTA_ID_IT  BIGINT
+    @COME_NIT_VC        VARCHAR(13)
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -27,14 +25,12 @@ BEGIN
     INSERT INTO commerce.COMERCIO (
         COME_NOMBRE_VC,
         COME_NIT_VC,
-        COME_CUENTA_ID_IT,
         COME_ACTIVO_BT,
         COME_FECHA_CREACION_DT
     )
     VALUES (
         @COME_NOMBRE_VC,
         @COME_NIT_VC,
-        @COME_CUENTA_ID_IT,
         1,
         GETDATE()
     );

@@ -19,8 +19,7 @@ public class GetCommerceListQueryHandler(ICommerceRepository repository)
         var result = new PagedResult<CommerceResponse>(
             items.Select(e => new CommerceResponse(
                 e.CommerceId, e.Name, e.Nit,
-                e.CuentaId, e.IsActive,
-                e.CreatedAt, e.UpdatedAt)),
+                e.IsActive, e.CreatedAt, e.UpdatedAt)),
             request.PageNumber, request.PageSize, total, totalPages);
 
         return BaseResponse<PagedResult<CommerceResponse>>.Success(result);

@@ -10,7 +10,6 @@ public class GetCommerceByIdQuery(long commerceId) : QuerySingleBase<CommerceEnt
         SELECT COME_ID_IT                  AS CommerceId,
                COME_NOMBRE_VC              AS Name,
                COME_NIT_VC                 AS Nit,
-               COME_CUENTA_ID_IT           AS CuentaId,
                COME_ACTIVO_BT              AS IsActive,
                COME_FECHA_CREACION_DT      AS CreatedAt,
                COME_FECHA_ACTUALIZACION_DT AS UpdatedAt

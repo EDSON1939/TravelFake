@@ -15,7 +15,6 @@ public class AutoMapperProfile : Profile
         CreateMap<CommerceResponse, CommerceDataPb>()
             .ForMember(d => d.Id, o => o.MapFrom(s => s.CommerceId))
             .ForMember(d => d.IsActive, o => o.MapFrom(s => s.IsActive))
-            .ForMember(d => d.CuentaId, o => o.MapFrom(s => s.CuentaId ?? 0))
             .ForMember(d => d.FechaCreacion, o => o.MapFrom(s => s.CreatedAt.ToString("o")))
             .ForMember(d => d.FechaActualizacion,
                 o => o.MapFrom(s => s.UpdatedAt.HasValue ? s.UpdatedAt.Value.ToString("o") : string.Empty));

@@ -19,7 +19,6 @@ public class GetCommerceByIdQueryHandler(ICommerceRepository repository)
 
         return BaseResponse<CommerceResponse>.Success(new CommerceResponse(
             entity.CommerceId, entity.Name, entity.Nit,
-            entity.CuentaId, entity.IsActive,
-            entity.CreatedAt, entity.UpdatedAt));
+            entity.IsActive, entity.CreatedAt, entity.UpdatedAt));
     }
 }

@@ -1,4 +1,7 @@
+using Commerce.Domain.Interfaces;
 using Commerce.Domain.Repositories;
+using Commerce.Infrastructure.ExternalServices;
+using Commerce.Infrastructure.Grpc;
 using Commerce.Infrastructure.Repositories;
 using Core.Infrastructure.Extensions;
 using Microsoft.Extensions.Configuration;
@@ -13,6 +16,12 @@ public static class DependencyInjection
     {
         services.AddDatabaseDependence(configuration);
         services.AddScoped<ICommerceRepository, CommerceRepository>();
+
+        services.AddGrpcClient<AccountsAndMovements.AccountsAndMovementsClient>(
+            nameof(AccountsAndMovements), configuration);
+        services.AddScoped<AccountsAndMovementsGrpcClient>();
+        services.AddScoped<IAccountsAndMovementsService, AccountsAndMovementsService>();
+
         return services;
     }
 }

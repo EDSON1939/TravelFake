@@ -11,8 +11,7 @@ public class InsertCommerceCommand(CommerceEntity entity) : SqlCommandBase<long>
 
     public override IEnumerable<SqlParameter>? Parameters =>
     [
-        new() { ParameterName = "@COME_NOMBRE_VC",    SqlDbType = SqlDbType.NVarChar, Size = 50,  Value = entity.Name   },
-        new() { ParameterName = "@COME_NIT_VC",       SqlDbType = SqlDbType.VarChar,  Size = 13,  Value = entity.Nit    },
-        new() { ParameterName = "@COME_CUENTA_ID_IT", SqlDbType = SqlDbType.BigInt,               Value = (object?)entity.CuentaId ?? DBNull.Value },
+        new() { ParameterName = "@COME_NOMBRE_VC",    SqlDbType = SqlDbType.NVarChar, Size = 50, Value = entity.Name },
+        new() { ParameterName = "@COME_NIT_VC",       SqlDbType = SqlDbType.VarChar,  Size = 13, Value = entity.Nit  },
     ];
 }

@@ -26,7 +26,6 @@ BEGIN
         COME_ID_IT                  BIGINT          NOT NULL IDENTITY(1,1),
         COME_NOMBRE_VC              NVARCHAR(50)    NOT NULL,
         COME_NIT_VC                 VARCHAR(13)     NOT NULL,
-        COME_CUENTA_ID_IT           BIGINT          NULL,
         COME_ACTIVO_BT              BIT             NOT NULL    DEFAULT 1,
         COME_FECHA_CREACION_DT      DATETIME        NOT NULL    DEFAULT GETDATE(),
         COME_FECHA_ACTUALIZACION_DT DATETIME        NULL,

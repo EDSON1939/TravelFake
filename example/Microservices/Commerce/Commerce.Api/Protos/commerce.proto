@@ -46,7 +46,7 @@ message CommerceDataPb {
     int64  id                     = 1;
     string name                   = 2;
     string nit                    = 3;
-    int64  cuenta_id              = 4;
+    reserved 4;  // cuenta_id eliminado: la cuenta del comercio se vincula por merchant_id en AccountsAndMovements
     bool   is_active              = 5;
     string fecha_creacion         = 6;
     string fecha_actualizacion    = 7;

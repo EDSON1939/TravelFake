@@ -20,7 +20,7 @@ public class GetCommerceByIdQueryHandlerTests
         var entity = new CommerceEntity
         {
             CommerceId = 1, Name = "Tienda Central", Nit = "900123456",
-            CuentaId = 5, IsActive = true, CreatedAt = DateTime.UtcNow
+            IsActive = true, CreatedAt = DateTime.UtcNow
         };
         _repository.GetById(1, default).Returns(entity);
 
