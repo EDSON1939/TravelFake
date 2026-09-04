@@ -1,4 +1,5 @@
 using AccountsAndMovements.Domain.Entities;
+using Core.Infrastructure.Audit;
 using Core.Infrastructure.Database.Commands;
 using Microsoft.Data.SqlClient;
 using System.Data;
@@ -12,7 +13,7 @@ namespace AccountsAndMovements.Infrastructure.Persistence.Commands;
 /// sostener desde C#. Devuelve el ID del asiento de debito o un codigo de
 /// <see cref="PaymentResult"/>.
 /// </summary>
-public class ExecuteQrPaymentCommand(PaymentEntity payment) : SqlCommandBase<long>
+public class ExecuteQrPaymentCommand(PaymentEntity payment, IAuditContext audit) : SqlCommandBase<long>
 {
     public override string Name => "pay.EJECUTAR_PAGO_QR";
 
@@ -31,5 +32,6 @@ public class ExecuteQrPaymentCommand(PaymentEntity payment) : SqlCommandBase<lon
         new() { ParameterName = "@IDEMPOTENCIA_VC",   SqlDbType = SqlDbType.VarChar,  Size = 64,                 Value = payment.IdempotencyKey        },
         new() { ParameterName = "@TRANSACCION_VC",    SqlDbType = SqlDbType.VarChar,  Size = 36,                 Value = payment.TransactionCode       },
         new() { ParameterName = "@DESCRIPCION_VC",    SqlDbType = SqlDbType.NVarChar, Size = 250,                Value = payment.Description           },
+        ..AuditParameters.For(audit),
     ];
 }

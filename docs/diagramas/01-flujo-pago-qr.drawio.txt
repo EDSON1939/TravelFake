@@ -1,0 +1,150 @@
+═══════════════════════════════════════════════════════════════════════════════
+ DIAGRAMA DE FLUJO — Pago QR de un cliente extranjero
+ Reto 1 · QR Bolivia · Edson + Mariel + Rene
+═══════════════════════════════════════════════════════════════════════════════
+
+ COMO USARLO
+   1. Abrir https://app.diagrams.net (draw.io)
+   2. Menu  Extras → Edit Diagram...
+   3. Borrar lo que haya y pegar TODO el bloque XML de abajo
+   4. OK
+   5. Exportar con  Archivo → Exportar como → PNG  (marcar "Transparent
+      Background" desactivado y zoom 200% para que se lea bien impreso)
+
+ QUE MUESTRA
+   Los 15 pasos del flujo del reto. La columna central es el camino feliz; la
+   derecha, cada punto donde la operacion se rechaza y con que codigo. El
+   recuadro punteado marca lo que ocurre DENTRO de la transaccion del motor:
+   es la frontera que explica por que el saldo no se valida en el handler.
+
+───────────────────────────────────────────────────────────────────────────────
+<mxGraphModel dx="1100" dy="1600" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="1700" math="0" shadow="0">
+  <root>
+    <mxCell id="0" />
+    <mxCell id="1" parent="0" />
+
+    <mxCell id="tit" value="Pago QR — cliente extranjero paga a un comercio boliviano" style="text;html=1;fontSize=20;fontStyle=1;align=center;verticalAlign=middle;fontColor=#1F3A34;" vertex="1" parent="1">
+      <mxGeometry x="60" y="20" width="640" height="30" as="geometry" />
+    </mxCell>
+
+    <mxCell id="zona" value="pay.EJECUTAR_PAGO_QR — UNA transaccion, cuentas bloqueadas con UPDLOCK + HOLDLOCK" style="rounded=0;whiteSpace=wrap;html=1;dashed=1;dashPattern=8 8;strokeColor=#0C5C52;strokeWidth=2;fillColor=none;verticalAlign=top;fontSize=11;fontColor=#0C5C52;fontStyle=1;align=center;spacingTop=6;" vertex="1" parent="1">
+      <mxGeometry x="120" y="1090" width="600" height="340" as="geometry" />
+    </mxCell>
+
+    <mxCell id="n1" value="Cliente escanea el QR" style="ellipse;whiteSpace=wrap;html=1;fillColor=#DFEEEA;strokeColor=#0C5C52;fontSize=12;" vertex="1" parent="1">
+      <mxGeometry x="260" y="70" width="200" height="50" as="geometry" />
+    </mxCell>
+
+    <mxCell id="n2" value="ExecuteQrPayment&#10;qr_code · amount · currency&#10;idempotency_key&#10;&#10;el cliente sale del JWT" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#3D4A47;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="260" y="150" width="200" height="80" as="geometry" />
+    </mxCell>
+
+    <mxCell id="d1" value="0. ¿La idempotency_key&#10;ya se uso?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#F7EEDA;strokeColor=#835710;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="240" y="260" width="240" height="90" as="geometry" />
+    </mxCell>
+
+    <mxCell id="r1" value="Mismos datos&#10;→ SUC000 · is_duplicate: true&#10;devuelve el resultado original&#10;NO cobra de nuevo" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E1F0E6;strokeColor=#1D6B3B;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="560" y="245" width="210" height="60" as="geometry" />
+    </mxCell>
+
+    <mxCell id="r2" value="Datos distintos&#10;→ DUPLICATE_TRANSACTION" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F6E8E2;strokeColor=#9B3C23;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="560" y="320" width="210" height="45" as="geometry" />
+    </mxCell>
+
+    <mxCell id="d2" value="1-2. ¿Cliente existe&#10;y esta activo?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#3D4A47;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="240" y="390" width="240" height="80" as="geometry" />
+    </mxCell>
+
+    <mxCell id="e2" value="CUSTOMER_NOT_FOUND&#10;CUSTOMER_INACTIVE" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F6E8E2;strokeColor=#9B3C23;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="560" y="405" width="210" height="45" as="geometry" />
+    </mxCell>
+
+    <mxCell id="d3" value="3-5. ¿QR existe, activo,&#10;no vencido, no usado?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#3D4A47;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="240" y="510" width="240" height="80" as="geometry" />
+    </mxCell>
+
+    <mxCell id="e3" value="QR_NOT_FOUND · QR_INACTIVE&#10;QR_EXPIRED · QR_ALREADY_USED" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F6E8E2;strokeColor=#9B3C23;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="560" y="525" width="210" height="45" as="geometry" />
+    </mxCell>
+
+    <mxCell id="d4" value="6. ¿Comercio existe&#10;y esta activo?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#3D4A47;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="240" y="630" width="240" height="80" as="geometry" />
+    </mxCell>
+
+    <mxCell id="e4" value="MERCHANT_NOT_FOUND&#10;MERCHANT_INACTIVE" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F6E8E2;strokeColor=#9B3C23;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="560" y="645" width="210" height="45" as="geometry" />
+    </mxCell>
+
+    <mxCell id="d5" value="7. ¿Moneda del cliente&#10;soportada y activa?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#3D4A47;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="240" y="750" width="240" height="80" as="geometry" />
+    </mxCell>
+
+    <mxCell id="e5" value="CURRENCY_NOT_SUPPORTED&#10;CURRENCY_MISMATCH" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F6E8E2;strokeColor=#9B3C23;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="560" y="765" width="210" height="45" as="geometry" />
+    </mxCell>
+
+    <mxCell id="n8" value="8-9. Tipo de cambio y conversion&#10;&#10;20 USD × 6.96 = 139.20 BOB&#10;la tasa se CONGELA en el asiento" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#DFEEEA;strokeColor=#0C5C52;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="260" y="870" width="200" height="75" as="geometry" />
+    </mxCell>
+
+    <mxCell id="d6" value="¿El convertido coincide&#10;con el monto del QR?&#10;(monto 0 = QR abierto)" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#3D4A47;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="240" y="965" width="240" height="90" as="geometry" />
+    </mxCell>
+
+    <mxCell id="e6" value="INVALID_AMOUNT" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F6E8E2;strokeColor=#9B3C23;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="560" y="990" width="210" height="40" as="geometry" />
+    </mxCell>
+
+    <mxCell id="n10" value="10. Resolver cuentas&#10;(titular, moneda) → numero de cuenta&#10;NO se lee saldo para decidir" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#3D4A47;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="255" y="1110" width="210" height="60" as="geometry" />
+    </mxCell>
+
+    <mxCell id="n11" value="Bloquear las DOS cuentas&#10;en una sola sentencia&#10;WITH (UPDLOCK, HOLDLOCK)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#DFEEEA;strokeColor=#0C5C52;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="255" y="1190" width="210" height="60" as="geometry" />
+    </mxCell>
+
+    <mxCell id="d7" value="10. ¿Saldo suficiente?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#3D4A47;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="255" y="1270" width="210" height="70" as="geometry" />
+    </mxCell>
+
+    <mxCell id="e7" value="ROLLBACK&#10;INSUFFICIENT_FUNDS" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F6E8E2;strokeColor=#9B3C23;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="560" y="1285" width="210" height="45" as="geometry" />
+    </mxCell>
+
+    <mxCell id="n13" value="11-13. DEBITO al cliente + CREDITO al comercio&#10;UPDATE de los dos saldos + 4 filas de auditoria&#10;COMMIT" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#DFEEEA;strokeColor=#0C5C52;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="180" y="1360" width="360" height="55" as="geometry" />
+    </mxCell>
+
+    <mxCell id="n14" value="14. MarkQrAsUsed — best effort&#10;el dinero ya se movio; que el QR no se cobre dos veces&#10;lo garantiza UQ_PAY_MOVIMIENTO_QR, no esta llamada" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F7EEDA;strokeColor=#835710;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="180" y="1460" width="360" height="60" as="geometry" />
+    </mxCell>
+
+    <mxCell id="n15" value="15. SUC000 + PaymentDataPb&#10;is_duplicate: false" style="ellipse;whiteSpace=wrap;html=1;fillColor=#E1F0E6;strokeColor=#1D6B3B;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="240" y="1550" width="240" height="60" as="geometry" />
+    </mxCell>
+
+    <mxCell id="a1" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#3D4A47;" edge="1" parent="1" source="n1" target="n2"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="a2" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#3D4A47;" edge="1" parent="1" source="n2" target="d1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="a3" value="si" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#835710;fontSize=10;" edge="1" parent="1" source="d1" target="r1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="a4" value="si" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#9B3C23;fontSize=10;" edge="1" parent="1" source="d1" target="r2"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="a5" value="no" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#0C5C52;fontSize=10;" edge="1" parent="1" source="d1" target="d2"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="a6" value="no" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#9B3C23;fontSize=10;" edge="1" parent="1" source="d2" target="e2"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="a7" value="si" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#0C5C52;fontSize=10;" edge="1" parent="1" source="d2" target="d3"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="a8" value="no" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#9B3C23;fontSize=10;" edge="1" parent="1" source="d3" target="e3"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="a9" value="si" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#0C5C52;fontSize=10;" edge="1" parent="1" source="d3" target="d4"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="a10" value="no" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#9B3C23;fontSize=10;" edge="1" parent="1" source="d4" target="e4"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="a11" value="si" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#0C5C52;fontSize=10;" edge="1" parent="1" source="d4" target="d5"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="a12" value="no" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#9B3C23;fontSize=10;" edge="1" parent="1" source="d5" target="e5"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="a13" value="si" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#0C5C52;fontSize=10;" edge="1" parent="1" source="d5" target="n8"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="a14" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#3D4A47;" edge="1" parent="1" source="n8" target="d6"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="a15" value="no" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#9B3C23;fontSize=10;" edge="1" parent="1" source="d6" target="e6"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="a16" value="si" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#0C5C52;fontSize=10;" edge="1" parent="1" source="d6" target="n10"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="a17" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#0C5C52;" edge="1" parent="1" source="n10" target="n11"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="a18" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#0C5C52;" edge="1" parent="1" source="n11" target="d7"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="a19" value="no" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#9B3C23;fontSize=10;" edge="1" parent="1" source="d7" target="e7"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="a20" value="si" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#0C5C52;fontSize=10;" edge="1" parent="1" source="d7" target="n13"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="a21" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#3D4A47;" edge="1" parent="1" source="n13" target="n14"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="a22" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#3D4A47;" edge="1" parent="1" source="n14" target="n15"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+  </root>
+</mxGraphModel>

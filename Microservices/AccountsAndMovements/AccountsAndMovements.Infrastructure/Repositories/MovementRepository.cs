@@ -2,12 +2,13 @@ using AccountsAndMovements.Domain.Entities;
 using AccountsAndMovements.Domain.Repositories;
 using AccountsAndMovements.Infrastructure.Persistence.Commands;
 using AccountsAndMovements.Infrastructure.Persistence.Queries;
+using Core.Infrastructure.Audit;
 using Core.Infrastructure.Database.Commands.Interfaces;
 using Core.Infrastructure.Database.Queries.Interfaces;
 
 namespace AccountsAndMovements.Infrastructure.Repositories;
 
-public class MovementRepository(IQuery query, ICommand command) : IMovementRepository
+public class MovementRepository(IQuery query, ICommand command, IAuditContext audit) : IMovementRepository
 {
     public async Task<IEnumerable<MovementEntity>> GetByAccount(
         string accountNumber, int pageNumber, int pageSize, CancellationToken ct = default)
@@ -27,8 +28,8 @@ public class MovementRepository(IQuery query, ICommand command) : IMovementRepos
         => await query.QuerySqlAsync(new GetMovementsByTransactionQuery(transactionCode), ct) ?? [];
 
     public async Task<long> ApplyMovement(MovementEntity movement, CancellationToken ct = default)
-        => await command.ExecuteAsync(new ApplyMovementCommand(movement), ct);
+        => await command.ExecuteAsync(new ApplyMovementCommand(movement, audit), ct);
 
     public async Task<long> ExecuteQrPayment(PaymentEntity payment, CancellationToken ct = default)
-        => await command.ExecuteAsync(new ExecuteQrPaymentCommand(payment), ct);
+        => await command.ExecuteAsync(new ExecuteQrPaymentCommand(payment, audit), ct);
 }

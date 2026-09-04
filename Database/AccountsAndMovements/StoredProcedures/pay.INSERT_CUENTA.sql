@@ -41,14 +41,20 @@ CREATE PROCEDURE pay.INSERT_CUENTA
     @CUEN_TITULAR_ID_IT    BIGINT,
     @CUEN_MONEDA_ID_IT     BIGINT,
     @CUEN_MONEDA_CODIGO_VC VARCHAR(10),
-    @CUEN_SALDO_INICIAL_DE DECIMAL(18,8)
+    @CUEN_SALDO_INICIAL_DE DECIMAL(18,8),
+    -- Auditoria: quien dio de alta la cuenta y bajo que traza. Default NULL para
+    -- no romper llamadores que todavia no los manden.
+    @AUDITORIA_TRAZA_VC    VARCHAR(64) = NULL,
+    @AUDITORIA_USUARIO_IT  BIGINT      = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
     SET XACT_ABORT ON;
 
     DECLARE @CuentaId BIGINT,
-            @Numero   VARCHAR(20);
+            @Numero   VARCHAR(20),
+            @AperturaId BIGINT,
+            @Json       NVARCHAR(MAX);
 
     BEGIN TRY
         BEGIN TRANSACTION;
@@ -122,10 +128,28 @@ BEGIN
                 GETDATE()
             );
 
+            SET @AperturaId = CAST(SCOPE_IDENTITY() AS BIGINT);
+
             UPDATE pay.CUENTA
             SET    CUEN_SALDO_DE = @CUEN_SALDO_INICIAL_DE
             WHERE  CUEN_ID_IT = @CuentaId;
+
+            -- El JSON va a una variable primero: T-SQL no admite una subconsulta
+            -- como argumento de EXEC.
+            SET @Json = (SELECT * FROM pay.MOVIMIENTO WHERE MOVI_ID_IT = @AperturaId
+                         FOR JSON PATH, WITHOUT_ARRAY_WRAPPER);
+
+            EXEC aud.REGISTRAR_AUDITORIA 'pay', 'MOVIMIENTO', @AperturaId, 'INSERT',
+                 NULL, @Json, @AUDITORIA_USUARIO_IT, @AUDITORIA_TRAZA_VC;
         END
+
+        -- El alta de la cuenta se audita una sola vez y con el registro ya
+        -- completo: numero asignado y, si hubo apertura, el saldo aplicado.
+        SET @Json = (SELECT * FROM pay.CUENTA WHERE CUEN_ID_IT = @CuentaId
+                     FOR JSON PATH, WITHOUT_ARRAY_WRAPPER);
+
+        EXEC aud.REGISTRAR_AUDITORIA 'pay', 'CUENTA', @CuentaId, 'INSERT',
+             NULL, @Json, @AUDITORIA_USUARIO_IT, @AUDITORIA_TRAZA_VC;
 
         COMMIT TRANSACTION;
 

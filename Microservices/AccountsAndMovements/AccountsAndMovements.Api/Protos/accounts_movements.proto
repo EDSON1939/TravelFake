@@ -15,50 +15,77 @@ package accounts_movements;
 import "base_response.proto";
 
 // ─── Servicio ────────────────────────────────────────────────────────────────
+//
+// No hay un endpoint generico con un discriminador de titular: cliente y
+// comercio tienen reglas distintas y cada uno tiene su operacion. Asi el
+// contrato no permite expresar combinaciones invalidas -una cuenta de comercio
+// en otra moneda, por ejemplo- en vez de rechazarlas en tiempo de ejecucion.
+//
+// Las operaciones que un cliente hace sobre lo suyo no reciben su id: sale del
+// claim client_id del JWT.
 service AccountsAndMovements {
     // ── Cuentas ─────────────────────────────────────────────────────────────
-    rpc CreateAccount      (CreateAccountRequestPb)      returns (AccountMutationBaseResponsePb);
-    rpc GetAccount         (GetAccountRequestPb)         returns (GetAccountBaseResponsePb);
-    // Resuelve (titular, moneda) -> cuenta. Lo usan los orquestadores.
-    rpc GetAccountByOwner  (GetAccountByOwnerRequestPb)  returns (GetAccountBaseResponsePb);
-    rpc GetAccountsByOwner (GetAccountsByOwnerRequestPb) returns (GetAccountsBaseResponsePb);
+    // Alta de cuentas. Operacion de operador: initial_balance acredita saldo.
+    rpc CreateClientAccount   (CreateClientAccountRequestPb)   returns (AccountMutationBaseResponsePb);
+    rpc CreateMerchantAccount (CreateMerchantAccountRequestPb) returns (AccountMutationBaseResponsePb);
+
+    rpc GetAccount            (GetAccountRequestPb)            returns (GetAccountBaseResponsePb);
+    // Mi cuenta en una moneda y todas mis cuentas. El cliente sale del token.
+    rpc GetMyAccount          (GetMyAccountRequestPb)          returns (GetAccountBaseResponsePb);
+    rpc GetMyAccounts         (GetMyAccountsRequestPb)         returns (GetAccountsBaseResponsePb);
+    // Cuenta del comercio: siempre BOB, por eso no se pide moneda.
+    rpc GetMerchantAccount    (GetMerchantAccountRequestPb)    returns (GetAccountBaseResponsePb);
+    rpc GetMerchantAccounts   (GetMerchantAccountsRequestPb)   returns (GetAccountsBaseResponsePb);
+
     // Credito o debito suelto: recargas, ajustes, reversas. Idempotente.
-    rpc ApplyMovement      (ApplyMovementRequestPb)      returns (ApplyMovementBaseResponsePb);
+    rpc ApplyMovement         (ApplyMovementRequestPb)         returns (ApplyMovementBaseResponsePb);
 
     // ── Pagos QR ────────────────────────────────────────────────────────────
     // Operacion central: valida, convierte, debita al cliente y acredita al
     // comercio en una sola transaccion. Idempotente por idempotency_key.
-    rpc ExecuteQrPayment   (ExecuteQrPaymentRequestPb)   returns (PaymentBaseResponsePb);
-    rpc GetPayment         (GetPaymentRequestPb)         returns (PaymentBaseResponsePb);
+    rpc ExecuteQrPayment      (ExecuteQrPaymentRequestPb)      returns (PaymentBaseResponsePb);
+    rpc GetPayment            (GetPaymentRequestPb)            returns (PaymentBaseResponsePb);
 
     // ── Movimientos ─────────────────────────────────────────────────────────
-    rpc GetMovements       (GetMovementsRequestPb)       returns (GetMovementsBaseResponsePb);
-    // Historial del titular con filtros de fecha y estado.
-    rpc GetHistory         (GetHistoryRequestPb)         returns (GetMovementsBaseResponsePb);
+    rpc GetMovements          (GetMovementsRequestPb)          returns (GetMovementsBaseResponsePb);
+    // Historial con filtros de fecha y estado.
+    rpc GetMyHistory          (GetMyHistoryRequestPb)          returns (GetMovementsBaseResponsePb);
+    rpc GetMerchantHistory    (GetMerchantHistoryRequestPb)    returns (GetMovementsBaseResponsePb);
 }
 
 // ─── Requests ────────────────────────────────────────────────────────────────
-message CreateAccountRequestPb {
-    string owner_type      = 1;  // CLIENTE | COMERCIO
-    int64  owner_id        = 2;
-    string coin_code       = 3;  // PEN, USD, BOB...
-    string initial_balance = 4;  // decimal como string, 0 = sin apertura
+message CreateClientAccountRequestPb {
+    int64  client_id       = 1;
+    string coin_code       = 2;  // PEN, USD, BOB...
+    string initial_balance = 3;  // decimal como string, 0 = sin apertura
+}
+
+message CreateMerchantAccountRequestPb {
+    // Sin coin_code: el comercio boliviano cobra en BOB por regla del negocio,
+    // asi que no hay nada que elegir ni nada que rechazar.
+    int64  merchant_id     = 1;
+    string initial_balance = 2;  // decimal como string, 0 = sin apertura
 }
 
 message GetAccountRequestPb {
     string number = 1;
 }
 
-message GetAccountByOwnerRequestPb {
-    string owner_type = 1;
-    int64  owner_id   = 2;
-    string coin_code  = 3;
+message GetMyAccountRequestPb {
+    string coin_code = 1;
 }
 
-message GetAccountsByOwnerRequestPb {
-    string owner_type  = 1;
-    int64  owner_id    = 2;
-    bool   only_active = 3;
+message GetMyAccountsRequestPb {
+    bool only_active = 1;
+}
+
+message GetMerchantAccountRequestPb {
+    int64 merchant_id = 1;
+}
+
+message GetMerchantAccountsRequestPb {
+    int64 merchant_id = 1;
+    bool  only_active = 2;
 }
 
 message ApplyMovementRequestPb {
@@ -71,7 +98,9 @@ message ApplyMovementRequestPb {
 }
 
 message ExecuteQrPaymentRequestPb {
-    int64  client_id       = 1;
+    // El cliente NO viaja en el request: sale del claim client_id del JWT. Si
+    // viajara aca, cualquiera podria pagar desde la cuenta de otro.
+    reserved 1;
     string qr_code         = 2;
     string amount          = 3;  // monto en la moneda del cliente
     string currency_code   = 4;  // moneda del cliente (ej: USD)
@@ -91,16 +120,23 @@ message GetMovementsRequestPb {
     int32  page_size      = 3;
 }
 
-message GetHistoryRequestPb {
-    string owner_type  = 1;
-    int64  owner_id    = 2;
+message GetMyHistoryRequestPb {
     // Fechas ISO 8601. Vacias = sin filtro. La final se toma inclusive.
-    string date_from   = 3;
-    string date_to     = 4;
+    string date_from   = 1;
+    string date_to     = 2;
     // PENDING | COMPLETED | FAILED | CANCELLED. Vacio = todos.
-    string status      = 5;
-    int32  page_number = 6;
-    int32  page_size   = 7;
+    string status      = 3;
+    int32  page_number = 4;
+    int32  page_size   = 5;
+}
+
+message GetMerchantHistoryRequestPb {
+    int64  merchant_id = 1;
+    string date_from   = 2;
+    string date_to     = 3;
+    string status      = 4;
+    int32  page_number = 5;
+    int32  page_size   = 6;
 }
 
 // ─── Data ────────────────────────────────────────────────────────────────────

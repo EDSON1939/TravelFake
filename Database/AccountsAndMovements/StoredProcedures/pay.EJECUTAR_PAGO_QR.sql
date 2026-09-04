@@ -85,7 +85,11 @@ CREATE PROCEDURE pay.EJECUTAR_PAGO_QR
     @REFERENCIA_VC     VARCHAR(64),
     @IDEMPOTENCIA_VC   VARCHAR(64),
     @TRANSACCION_VC    VARCHAR(36),
-    @DESCRIPCION_VC    NVARCHAR(250)
+    @DESCRIPCION_VC    NVARCHAR(250),
+    -- Auditoria: quien origino el pago y bajo que traza. Default NULL para no
+    -- romper llamadores que todavia no los manden.
+    @AUDITORIA_TRAZA_VC   VARCHAR(64) = NULL,
+    @AUDITORIA_USUARIO_IT BIGINT      = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -104,6 +108,15 @@ BEGIN
             @MovimientoId    BIGINT,
             @MovimientoCuenta BIGINT,
             @MovimientoQr    VARCHAR(64),
+            @MovimientoMonto  DECIMAL(18,8),
+            @MovimientoMoneda VARCHAR(10),
+            @CreditoId       BIGINT,
+            @DebitoJson      NVARCHAR(MAX),
+            @CreditoJson     NVARCHAR(MAX),
+            @OrigenAntes     NVARCHAR(MAX),
+            @OrigenDespues   NVARCHAR(MAX),
+            @DestinoAntes    NVARCHAR(MAX),
+            @DestinoDespues  NVARCHAR(MAX),
             @Resultado       BIGINT;
 
     BEGIN TRY
@@ -141,12 +154,20 @@ BEGIN
         --
         -- La busqueda es por clave sola, sin cuenta, porque la clave es unica en
         -- todo el sistema. Solo cuenta como reintento si el asiento hallado es
-        -- de ESTA cuenta y de ESTE QR; si no, la clave fue reusada para otra
-        -- cosa y devolver ese movimiento seria darle a un cliente el pago de
-        -- otro, o dar por pagado un QR que nunca se cobro.
+        -- de ESTA cuenta, de ESTE QR y por EL MISMO importe y moneda; si no, la
+        -- clave fue reusada para otra cosa y devolver ese movimiento seria darle
+        -- a un cliente el pago de otro, o dar por pagado un QR que nunca se
+        -- cobro.
+        --
+        -- La comparacion replica exactamente la del handler. Si fuera mas laxa
+        -- aca, el mismo caso daria un resultado por el camino normal y otro
+        -- distinto cuando se resuelve por carrera: el resultado dependeria del
+        -- momento, que es justo lo que la idempotencia existe para evitar.
         SELECT @MovimientoId     = MOVI_ID_IT,
                @MovimientoCuenta = MOVI_CUENTA_ID_IT,
-               @MovimientoQr     = ISNULL(MOVI_QR_CODIGO_VC, '')
+               @MovimientoQr     = ISNULL(MOVI_QR_CODIGO_VC, ''),
+               @MovimientoMonto  = MOVI_MONTO_ORIGEN_DE,
+               @MovimientoMoneda = MOVI_MONEDA_ORIGEN_VC
         FROM   pay.MOVIMIENTO
         WHERE  MOVI_IDEMPOTENCIA_VC = @IDEMPOTENCIA_VC;
 
@@ -154,7 +175,10 @@ BEGIN
         BEGIN
             COMMIT TRANSACTION;
 
-            IF @MovimientoCuenta = @OrigenId AND @MovimientoQr = @QR_CODIGO_VC
+            IF @MovimientoCuenta  = @OrigenId
+               AND @MovimientoQr     = @QR_CODIGO_VC
+               AND @MovimientoMonto  = @MONTO_ORIGEN_DE
+               AND @MovimientoMoneda = @MONEDA_ORIGEN_VC
                 SELECT CAST(@MovimientoId AS BIGINT) AS Resultado;
             ELSE
                 SELECT CAST(-9 AS BIGINT) AS Resultado;
@@ -248,9 +272,11 @@ BEGIN
         SET @Resultado = CAST(SCOPE_IDENTITY() AS BIGINT);
 
         -- ── Asiento 2: CREDITO al comercio, en BOB ───────────────────────────
-        -- Lleva el mismo TRANSACCION y la clave de idempotencia sufijada: la
-        -- restriccion unica es por (cuenta, clave), asi que el sufijo evita
-        -- chocar si alguna vez cliente y comercio compartieran cuenta.
+        -- Lleva el mismo TRANSACCION y la clave de idempotencia sufijada con
+        -- "-IN". El sufijo es obligatorio siempre, no una precaucion: la
+        -- restriccion UQ_PAY_MOVIMIENTO_IDEMPOTENCIA es GLOBAL sobre la clave
+        -- sola, asi que sin el sufijo el credito chocaria contra el debito en
+        -- todos los pagos, no solo en un caso raro.
         INSERT INTO pay.MOVIMIENTO (
             MOVI_CUENTA_ID_IT, MOVI_TIPO_VC, MOVI_ESTADO_VC,
             MOVI_MONTO_DE, MOVI_SALDO_ANTERIOR_DE, MOVI_SALDO_POSTERIOR_DE,
@@ -270,6 +296,17 @@ BEGIN
             GETDATE()
         );
 
+        SET @CreditoId = CAST(SCOPE_IDENTITY() AS BIGINT);
+
+        -- ── Auditoria ────────────────────────────────────────────────────────
+        -- Un pago deja CUATRO rastros: los dos asientos y los dos saldos. Todos
+        -- dentro de esta transaccion, asi que o quedan los cuatro o no queda
+        -- ninguno, igual que el dinero.
+        SET @OrigenAntes  = (SELECT * FROM pay.CUENTA WHERE CUEN_ID_IT = @OrigenId
+                             FOR JSON PATH, WITHOUT_ARRAY_WRAPPER);
+        SET @DestinoAntes = (SELECT * FROM pay.CUENTA WHERE CUEN_ID_IT = @DestinoId
+                             FOR JSON PATH, WITHOUT_ARRAY_WRAPPER);
+
         UPDATE pay.CUENTA
         SET    CUEN_SALDO_DE               = @OrigenPosterior,
                CUEN_FECHA_ACTUALIZACION_DT = GETDATE()
@@ -279,6 +316,32 @@ BEGIN
         SET    CUEN_SALDO_DE               = @DestinoPosterior,
                CUEN_FECHA_ACTUALIZACION_DT = GETDATE()
         WHERE  CUEN_ID_IT = @DestinoId;
+
+        SET @OrigenDespues  = (SELECT * FROM pay.CUENTA WHERE CUEN_ID_IT = @OrigenId
+                               FOR JSON PATH, WITHOUT_ARRAY_WRAPPER);
+        SET @DestinoDespues = (SELECT * FROM pay.CUENTA WHERE CUEN_ID_IT = @DestinoId
+                               FOR JSON PATH, WITHOUT_ARRAY_WRAPPER);
+
+        -- Los JSON pasan por variables: T-SQL no admite una subconsulta como
+        -- argumento de EXEC.
+        SET @DebitoJson  = (SELECT * FROM pay.MOVIMIENTO WHERE MOVI_ID_IT = @Resultado
+                            FOR JSON PATH, WITHOUT_ARRAY_WRAPPER);
+        SET @CreditoJson = (SELECT * FROM pay.MOVIMIENTO WHERE MOVI_ID_IT = @CreditoId
+                            FOR JSON PATH, WITHOUT_ARRAY_WRAPPER);
+
+        EXEC aud.REGISTRAR_AUDITORIA 'pay', 'MOVIMIENTO', @Resultado, 'INSERT',
+             NULL, @DebitoJson, @AUDITORIA_USUARIO_IT, @AUDITORIA_TRAZA_VC;
+
+        EXEC aud.REGISTRAR_AUDITORIA 'pay', 'MOVIMIENTO', @CreditoId, 'INSERT',
+             NULL, @CreditoJson, @AUDITORIA_USUARIO_IT, @AUDITORIA_TRAZA_VC;
+
+        EXEC aud.REGISTRAR_AUDITORIA 'pay', 'CUENTA', @OrigenId, 'UPDATE',
+             @OrigenAntes, @OrigenDespues,
+             @AUDITORIA_USUARIO_IT, @AUDITORIA_TRAZA_VC;
+
+        EXEC aud.REGISTRAR_AUDITORIA 'pay', 'CUENTA', @DestinoId, 'UPDATE',
+             @DestinoAntes, @DestinoDespues,
+             @AUDITORIA_USUARIO_IT, @AUDITORIA_TRAZA_VC;
 
         COMMIT TRANSACTION;
 
@@ -295,13 +358,18 @@ BEGIN
             -- asiento resulta ser de otra cuenta, la clave fue reusada.
             SELECT @MovimientoId     = MOVI_ID_IT,
                    @MovimientoCuenta = MOVI_CUENTA_ID_IT,
-                   @MovimientoQr     = ISNULL(MOVI_QR_CODIGO_VC, '')
+                   @MovimientoQr     = ISNULL(MOVI_QR_CODIGO_VC, ''),
+                   @MovimientoMonto  = MOVI_MONTO_ORIGEN_DE,
+                   @MovimientoMoneda = MOVI_MONEDA_ORIGEN_VC
             FROM   pay.MOVIMIENTO
             WHERE  MOVI_IDEMPOTENCIA_VC = @IDEMPOTENCIA_VC;
 
             IF @MovimientoId IS NOT NULL
             BEGIN
-                IF @MovimientoCuenta = @OrigenId AND @MovimientoQr = @QR_CODIGO_VC
+                IF @MovimientoCuenta  = @OrigenId
+                   AND @MovimientoQr     = @QR_CODIGO_VC
+                   AND @MovimientoMonto  = @MONTO_ORIGEN_DE
+                   AND @MovimientoMoneda = @MONEDA_ORIGEN_VC
                     SELECT CAST(@MovimientoId AS BIGINT) AS Resultado;
                 ELSE
                     SELECT CAST(-9 AS BIGINT) AS Resultado;

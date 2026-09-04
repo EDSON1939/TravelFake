@@ -107,20 +107,24 @@ cambio**.
 | `pay.APLICAR_MOVIMIENTO` | Crédito o débito sobre una cuenta, con bloqueo de fila e idempotencia |
 | `pay.EJECUTAR_PAGO_QR` | Pago completo: débito + crédito + dos asientos, todo o nada |
 
+**`aud.BITACORA` y `aud.AUDITORIA`** — el rastro de quién llamó a qué y de cómo
+quedó cada dato. Scripts en `Database/Core/`, compartidos con los demás
+microservicios pero instalados en la base de cada uno.
+
 ### Instalación
 
+Las instrucciones completas —Docker incluido— están en
+[`docs/EJECUCION.md`](../../docs/EJECUCION.md). En corto:
+
 ```bash
-sqlcmd -S localhost\SQLEXPRESS -Q "IF DB_ID('DB_QRBolivia') IS NULL CREATE DATABASE DB_QRBolivia"
+sqlcmd -S "localhost\SQLEXPRESS" -E -Q "IF DB_ID('DB_QRBolivia') IS NULL CREATE DATABASE DB_QRBolivia"
 ```
 
-Luego, en ese orden:
+Luego, **en ese orden** — `aud` antes que `pay`, porque los procedimientos de
+`pay` llaman a `aud.REGISTRAR_AUDITORIA`:
 
 ```bash
-sqlcmd -S localhost\SQLEXPRESS -d DB_QRBolivia -i Database/AccountsAndMovements/Tables/pay.CUENTA.sql
-sqlcmd -S localhost\SQLEXPRESS -d DB_QRBolivia -i Database/AccountsAndMovements/Tables/pay.MOVIMIENTO.sql
-sqlcmd -S localhost\SQLEXPRESS -d DB_QRBolivia -i Database/AccountsAndMovements/StoredProcedures/pay.INSERT_CUENTA.sql
-sqlcmd -S localhost\SQLEXPRESS -d DB_QRBolivia -i Database/AccountsAndMovements/StoredProcedures/pay.APLICAR_MOVIMIENTO.sql
-sqlcmd -S localhost\SQLEXPRESS -d DB_QRBolivia -i Database/AccountsAndMovements/StoredProcedures/pay.EJECUTAR_PAGO_QR.sql
+sqlcmd -S "localhost\SQLEXPRESS" -E -d DB_QRBolivia -b -i "Database\Core\Tables\aud.BITACORA.sql,Database\Core\Tables\aud.AUDITORIA.sql,Database\Core\StoredProcedures\aud.INSERT_BITACORA.sql,Database\Core\StoredProcedures\aud.REGISTRAR_AUDITORIA.sql,Database\AccountsAndMovements\Tables\pay.CUENTA.sql,Database\AccountsAndMovements\Tables\pay.MOVIMIENTO.sql,Database\AccountsAndMovements\StoredProcedures\pay.INSERT_CUENTA.sql,Database\AccountsAndMovements\StoredProcedures\pay.APLICAR_MOVIMIENTO.sql,Database\AccountsAndMovements\StoredProcedures\pay.EJECUTAR_PAGO_QR.sql"
 ```
 
 Los scripts son idempotentes: se pueden volver a ejecutar sin efecto adicional.
@@ -142,25 +146,35 @@ Los scripts son idempotentes: se pueden volver a ejecutar sin efecto adicional.
 como **string** para no perder precisión; las fechas como **ISO 8601**, y `""`
 significa "sin valor" porque proto3 no tiene null para escalares.
 
+No hay un endpoint genérico con un discriminador de titular: cliente y comercio
+tienen reglas distintas y cada uno tiene la suya. Los marcados con 🔑 sacan el
+cliente del claim `client_id` del JWT y **no lo reciben como parámetro**.
+
 | RPC | Para qué |
 |---|---|
-| `CreateAccount` | Abre cuenta de cliente o comercio, con saldo inicial opcional |
+| `CreateClientAccount` | Abre la cuenta de un cliente, con saldo inicial opcional |
+| `CreateMerchantAccount` | Abre la cuenta de un comercio. Sin moneda: siempre BOB |
 | `GetAccount` | Cuenta por número |
-| `GetAccountByOwner` | Resuelve (titular, moneda) → cuenta |
-| `GetAccountsByOwner` | Todas las cuentas de un titular |
+| `GetMyAccount` 🔑 | Mi cuenta en una moneda |
+| `GetMyAccounts` 🔑 | Todas mis cuentas |
+| `GetMerchantAccount` | Cuenta BOB de un comercio |
+| `GetMerchantAccounts` | Todas las cuentas de un comercio |
 | `ApplyMovement` | Crédito/débito suelto, idempotente |
-| **`ExecuteQrPayment`** | **Pago del QR: la operación central** |
+| **`ExecuteQrPayment`** 🔑 | **Pago del QR: la operación central** |
 | `GetPayment` | Consulta una operación por código o por idempotency key |
 | `GetMovements` | Extracto de una cuenta |
-| `GetHistory` | Historial del titular filtrando por fechas y estado |
+| `GetMyHistory` 🔑 | Mi historial, filtrando por fechas y estado |
+| `GetMerchantHistory` | Historial de un comercio |
+
+El detalle completo —campos, reglas, respuestas y errores de cada uno— está en
+[`docs/ENDPOINTS.md`](../../docs/ENDPOINTS.md).
 
 ### Ejemplo — `ExecuteQrPayment`
 
-Request:
+Request. El cliente no viaja en el cuerpo: sale del token.
 
 ```json
 {
-  "client_id": 7,
   "qr_code": "QR-BO-0001",
   "amount": "20",
   "currency_code": "USD",
@@ -209,21 +223,22 @@ Error de negocio (saldo insuficiente):
 }
 ```
 
-### Ejemplo — `CreateAccount`
+### Ejemplo — `CreateClientAccount`
 
 ```json
-{ "owner_type": "CLIENTE", "owner_id": 7, "coin_code": "USD", "initial_balance": "500" }
+{ "client_id": 7, "coin_code": "USD", "initial_balance": "500" }
 ```
 
 ```json
 { "message": "OK.", "status_code": "SUC000", "data": 1 }
 ```
 
-### Ejemplo — `GetHistory`
+### Ejemplo — `GetMyHistory`
+
+Sin titular: es "mi" historial, y el cliente sale del token.
 
 ```json
 {
-  "owner_type": "CLIENTE", "owner_id": 7,
   "date_from": "2026-09-01", "date_to": "2026-09-30",
   "status": "COMPLETED", "page_number": 1, "page_size": 20
 }
@@ -419,7 +434,7 @@ apuntando a `accounts_movements.proto`.
 dotnet test Microservices/AccountsAndMovements/Tests/AccountsAndMovements.Unit.Tests
 ```
 
-65 pruebas, que cubren la lista obligatoria del reto:
+69 pruebas unitarias en este microservicio (100 en toda la solucion, contando Auth), que cubren la lista obligatoria del reto:
 
 | Caso del reto | Prueba |
 |---|---|

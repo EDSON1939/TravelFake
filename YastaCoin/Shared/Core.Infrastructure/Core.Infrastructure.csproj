@@ -33,6 +33,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Core.AuditTrail\Core.AuditTrail.csproj" />
+    <!-- ICurrentUser: la bitacora necesita saber quien hizo cada llamada. -->
+    <ProjectReference Include="..\Core.ShareKernel\Core.ShareKernel.csproj" />
   </ItemGroup>
 
 

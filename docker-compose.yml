@@ -1,0 +1,130 @@
+# =============================================================================
+# YastaCoin — entorno completo para levantar los microservicios y su base.
+#
+#   cp .env.example .env      (y cambia la contrasena)
+#   docker compose up -d --build
+#
+# Puertos publicados, los mismos que usan los perfiles de Visual Studio para que
+# las colecciones de Postman sirvan igual con o sin Docker:
+#   52127  Auth
+#   52131  AccountsAndMovements
+#   1433   SQL Server
+#
+# Los cuatro microservicios que faltan -Clientes, Comercios, QR y Monedas- no
+# existen todavia. AccountsAndMovements corre igual gracias a los catalogos en
+# memoria de ExternalServices/Fakes; cuando esos servicios lleguen, se agregan
+# aca y se apaga UseFakeExternalServices.
+# =============================================================================
+
+name: yastacoin
+
+services:
+
+  # ── Base de datos ─────────────────────────────────────────────────────────
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: yastacoin-sqlserver
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:?definir MSSQL_SA_PASSWORD en .env}
+      MSSQL_PID: Express
+    ports:
+      - "1433:1433"
+    volumes:
+      - mssql-data:/var/opt/mssql
+    healthcheck:
+      # El contenedor acepta conexiones bastante antes de terminar de arrancar,
+      # asi que no alcanza con esperar al puerto: hay que ejecutar algo.
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -C -Q 'SELECT 1' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    networks: [yastacoin]
+
+  # ── Creacion de esquemas ──────────────────────────────────────────────────
+  # Corre una sola vez y termina. Los scripts son idempotentes: se pueden
+  # volver a ejecutar sin efecto adicional, asi que un `up` repetido no rompe
+  # nada ni borra datos.
+  db-init:
+    image: mcr.microsoft.com/mssql-tools:latest
+    container_name: yastacoin-db-init
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    volumes:
+      - ./Database:/scripts:ro
+    environment:
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:?definir MSSQL_SA_PASSWORD en .env}
+    entrypoint: >
+      /bin/bash -c "
+      set -e;
+      SQL='/opt/mssql-tools/bin/sqlcmd -S sqlserver -U sa -P $$MSSQL_SA_PASSWORD -b';
+      echo '→ Creando bases';
+      $$SQL -Q \"IF DB_ID('DB_QRBolivia')  IS NULL CREATE DATABASE DB_QRBolivia;\";
+      $$SQL -Q \"IF DB_ID('DB_YastaCoinE') IS NULL CREATE DATABASE DB_YastaCoinE;\";
+      echo '→ QR Bolivia: tablas';
+      $$SQL -d DB_QRBolivia -i /scripts/AccountsAndMovements/Tables/pay.CUENTA.sql;
+      $$SQL -d DB_QRBolivia -i /scripts/AccountsAndMovements/Tables/pay.MOVIMIENTO.sql;
+      echo '→ QR Bolivia: procedimientos';
+      $$SQL -d DB_QRBolivia -i /scripts/AccountsAndMovements/StoredProcedures/pay.INSERT_CUENTA.sql;
+      $$SQL -d DB_QRBolivia -i /scripts/AccountsAndMovements/StoredProcedures/pay.APLICAR_MOVIMIENTO.sql;
+      $$SQL -d DB_QRBolivia -i /scripts/AccountsAndMovements/StoredProcedures/pay.EJECUTAR_PAGO_QR.sql;
+      echo '→ Auditoria, en las dos bases';
+      for DB in DB_QRBolivia DB_YastaCoinE; do
+        $$SQL -d $$DB -i /scripts/Core/Tables/aud.BITACORA.sql;
+        $$SQL -d $$DB -i /scripts/Core/Tables/aud.AUDITORIA.sql;
+        $$SQL -d $$DB -i /scripts/Core/StoredProcedures/aud.INSERT_BITACORA.sql;
+        $$SQL -d $$DB -i /scripts/Core/StoredProcedures/aud.REGISTRAR_AUDITORIA.sql;
+      done;
+      echo '✓ Esquemas listos';
+      "
+    networks: [yastacoin]
+
+  # ── Microservicios ────────────────────────────────────────────────────────
+  auth:
+    build:
+      # La raiz del repo: los proyectos compartidos viven fuera de Microservices/.
+      context: .
+      dockerfile: Microservices/Auth/Auth.Api/Dockerfile
+    container_name: yastacoin-auth
+    depends_on:
+      db-init:
+        condition: service_completed_successfully
+    environment:
+      ASPNETCORE_ENVIRONMENT: Docker
+      Database__ConnectionString: "Server=sqlserver,1433;Database=DB_YastaCoinE;User Id=sa;Password=${MSSQL_SA_PASSWORD};TrustServerCertificate=True;MultipleActiveResultSets=True;"
+      # Fuera del codigo fuente, como pide el reto. En produccion esto sale de
+      # un gestor de secretos, no de un .env.
+      Jwt__TokenSecret: ${JWT_TOKEN_SECRET:?definir JWT_TOKEN_SECRET en .env}
+    ports:
+      - "52127:8080"
+    restart: unless-stopped
+    networks: [yastacoin]
+
+  accounts-movements:
+    build:
+      context: .
+      dockerfile: Microservices/AccountsAndMovements/AccountsAndMovements.Api/Dockerfile
+    container_name: yastacoin-accounts-movements
+    depends_on:
+      db-init:
+        condition: service_completed_successfully
+    environment:
+      ASPNETCORE_ENVIRONMENT: Docker
+      Database__ConnectionString: "Server=sqlserver,1433;Database=DB_QRBolivia;User Id=sa;Password=${MSSQL_SA_PASSWORD};TrustServerCertificate=True;MultipleActiveResultSets=True;"
+      # Clientes, Comercios, QR y Monedas todavia no existen como contenedores.
+      UseFakeExternalServices: "true"
+      DevAuth__Enabled: "true"
+      DevAuth__ClientId: "1"
+    ports:
+      - "52131:8080"
+    restart: unless-stopped
+    networks: [yastacoin]
+
+volumes:
+  mssql-data:
+
+networks:
+  yastacoin:
+    driver: bridge

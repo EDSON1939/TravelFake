@@ -1,6 +1,7 @@
 using AccountsAndMovements.Domain.ExternalServices;
 using AccountsAndMovements.Domain.Repositories;
 using AccountsAndMovements.Infrastructure.ExternalServices;
+using AccountsAndMovements.Infrastructure.ExternalServices.Fakes;
 using AccountsAndMovements.Infrastructure.Repositories;
 using Core.Infrastructure.Extensions;
 using Core.Infrastructure.Grpc;
@@ -17,6 +18,13 @@ public static class DependencyInjection
         services.AddDatabaseDependence(configuration);
         services.AddScoped<IAccountRepository, AccountRepository>();
         services.AddScoped<IMovementRepository, MovementRepository>();
+
+        // Clientes, Comercios, QR y Monedas todavia no existen como servicios
+        // desplegados. Con "UseFakeExternalServices": true se reemplazan por
+        // catalogos en memoria y este microservicio corre solo. Apagar la
+        // bandera devuelve el cableado gRPC real sin tocar codigo.
+        if (configuration.GetValue<bool>("UseFakeExternalServices"))
+            return services.AddFakeExternalServices();
 
         // Reenvia el JWT recibido hacia el siguiente salto de la cadena.
         services.AddTransient<TokenPropagationHandler>();
@@ -41,6 +49,21 @@ public static class DependencyInjection
         services.AddScoped<IMerchantService, MerchantService>();
         services.AddScoped<IQrService, QrService>();
         services.AddScoped<ICurrencyService, CurrencyService>();
+
+        return services;
+    }
+
+    /// <summary>
+    /// Datos quemados para probar el servicio aislado. FakeQrService va como
+    /// Singleton porque MarkAsUsed cambia el estado del QR y ese cambio tiene que
+    /// sobrevivir entre requests; los otros tres son catalogos inmutables.
+    /// </summary>
+    private static IServiceCollection AddFakeExternalServices(this IServiceCollection services)
+    {
+        services.AddSingleton<IClientService,   FakeClientService>();
+        services.AddSingleton<IMerchantService, FakeMerchantService>();
+        services.AddSingleton<IQrService,       FakeQrService>();
+        services.AddSingleton<ICurrencyService, FakeCurrencyService>();
 
         return services;
     }

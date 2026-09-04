@@ -1,4 +1,4 @@
-using AccountsAndMovements.Application.Features.Accounts.Commands.CreateAccount;
+using AccountsAndMovements.Application.Features.Accounts.Commands.CreateClientAccount;
 using AccountsAndMovements.Domain.Entities;
 using AccountsAndMovements.Domain.ExternalServices;
 using AccountsAndMovements.Domain.Repositories;
@@ -9,24 +9,21 @@ using ErrorCode = AccountsAndMovements.Domain.Errors.ErrorCode;
 
 namespace AccountsAndMovements.Unit.Tests.Features.Accounts;
 
-public class CreateAccountCommandHandlerTests
+public class CreateClientAccountCommandHandlerTests
 {
     private readonly IAccountRepository _repository      = Substitute.For<IAccountRepository>();
     private readonly IClientService     _clientService   = Substitute.For<IClientService>();
-    private readonly IMerchantService   _merchantService = Substitute.For<IMerchantService>();
     private readonly ICurrencyService   _currencyService = Substitute.For<ICurrencyService>();
 
-    private readonly CreateAccountCommandHandler _handler;
+    private readonly CreateClientAccountCommandHandler _handler;
 
-    public CreateAccountCommandHandlerTests()
+    public CreateClientAccountCommandHandlerTests()
     {
-        _handler = new CreateAccountCommandHandler(
-            _repository, _clientService, _merchantService, _currencyService);
+        _handler = new CreateClientAccountCommandHandler(
+            _repository, _clientService, _currencyService);
 
         _clientService.GetById(7, Arg.Any<CancellationToken>())
             .Returns(new ClientInfo(7, "Carlos Pérez", "carlos@mail.com", "PE", "PEN", IsActive: true));
-        _merchantService.GetById(55, Arg.Any<CancellationToken>())
-            .Returns(new MerchantInfo(55, "Café Central", "1234567", "BOB", IsActive: true));
         _currencyService.GetByCode(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(new CurrencyInfo(3, "PEN", "S/", IsActive: true));
         _repository.Insert(Arg.Any<AccountEntity>(), Arg.Any<CancellationToken>()).Returns(42L);
@@ -35,8 +32,7 @@ public class CreateAccountCommandHandlerTests
     [Fact]
     public async Task Handle_WhenClientAndCurrencyAreValid_CreatesTheAccount()
     {
-        var result = await _handler.Handle(
-            new CreateAccountCommand(AccountOwnerType.CLIENTE, 7, "PEN", 2500m), default);
+        var result = await _handler.Handle(new CreateClientAccountCommand(7, "PEN", 2500m), default);
 
         result.StatusCode.Should().Be(Core.Domain.Errors.ErrorCode.SUC000);
         result.Data.Should().Be(42L);
@@ -49,9 +45,9 @@ public class CreateAccountCommandHandlerTests
         _repository.Insert(Arg.Do<AccountEntity>(x => captured = x), Arg.Any<CancellationToken>())
             .Returns(42L);
 
-        await _handler.Handle(
-            new CreateAccountCommand("cliente", 7, " pen ", 2500m), default);
+        await _handler.Handle(new CreateClientAccountCommand(7, " pen ", 2500m), default);
 
+        // El tipo de titular ya no viene del request: lo fija el propio comando.
         captured!.OwnerType.Should().Be(AccountOwnerType.CLIENTE);
         captured.OwnerId.Should().Be(7);
         captured.CoinId.Should().Be(3);
@@ -64,8 +60,7 @@ public class CreateAccountCommandHandlerTests
     {
         _clientService.GetById(99, Arg.Any<CancellationToken>()).Returns((ClientInfo?)null);
 
-        var result = await _handler.Handle(
-            new CreateAccountCommand(AccountOwnerType.CLIENTE, 99, "PEN", 0m), default);
+        var result = await _handler.Handle(new CreateClientAccountCommand(99, "PEN", 0m), default);
 
         result.StatusCode.Should().Be(ErrorCode.CUSTOMER_NOT_FOUND);
     }
@@ -76,21 +71,9 @@ public class CreateAccountCommandHandlerTests
         _clientService.GetById(7, Arg.Any<CancellationToken>())
             .Returns(new ClientInfo(7, "Carlos Pérez", "carlos@mail.com", "PE", "PEN", IsActive: false));
 
-        var result = await _handler.Handle(
-            new CreateAccountCommand(AccountOwnerType.CLIENTE, 7, "PEN", 0m), default);
+        var result = await _handler.Handle(new CreateClientAccountCommand(7, "PEN", 0m), default);
 
         result.StatusCode.Should().Be(ErrorCode.CUSTOMER_INACTIVE);
-    }
-
-    [Fact]
-    public async Task Handle_WhenMerchantAccountIsNotInBob_IsRejected()
-    {
-        // Regla del reto: el comercio boliviano cobra en BOB.
-        var result = await _handler.Handle(
-            new CreateAccountCommand(AccountOwnerType.COMERCIO, 55, "USD", 0m), default);
-
-        result.StatusCode.Should().Be(ErrorCode.MERCHANT_CURRENCY_INVALID);
-        await _repository.DidNotReceive().Insert(Arg.Any<AccountEntity>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -99,20 +82,18 @@ public class CreateAccountCommandHandlerTests
         _currencyService.GetByCode(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns((CurrencyInfo?)null);
 
-        var result = await _handler.Handle(
-            new CreateAccountCommand(AccountOwnerType.CLIENTE, 7, "XXX", 0m), default);
+        var result = await _handler.Handle(new CreateClientAccountCommand(7, "XXX", 0m), default);
 
         result.StatusCode.Should().Be(ErrorCode.CURRENCY_NOT_SUPPORTED);
     }
 
     [Fact]
-    public async Task Handle_WhenOwnerAlreadyHasAnAccountInThatCurrency_ReturnsDuplicate()
+    public async Task Handle_WhenTheClientAlreadyHasAnAccountInThatCurrency_ReturnsDuplicate()
     {
         _repository.Insert(Arg.Any<AccountEntity>(), Arg.Any<CancellationToken>())
             .Returns(AccountResult.DUPLICATE);
 
-        var result = await _handler.Handle(
-            new CreateAccountCommand(AccountOwnerType.CLIENTE, 7, "PEN", 0m), default);
+        var result = await _handler.Handle(new CreateClientAccountCommand(7, "PEN", 0m), default);
 
         result.StatusCode.Should().Be(ErrorCode.ACCOUNT_DUPLICATE);
     }

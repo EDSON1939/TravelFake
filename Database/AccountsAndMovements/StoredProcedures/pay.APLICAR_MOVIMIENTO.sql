@@ -49,7 +49,13 @@ CREATE PROCEDURE pay.APLICAR_MOVIMIENTO
     @MOVI_MONTO_DE        DECIMAL(18,8),
     @MOVI_REFERENCIA_VC   VARCHAR(64),
     @MOVI_IDEMPOTENCIA_VC VARCHAR(64),
-    @MOVI_DESCRIPCION_VC  NVARCHAR(250)
+    @MOVI_DESCRIPCION_VC  NVARCHAR(250),
+    -- Auditoria: quien origino el cambio y bajo que traza. Llevan default NULL
+    -- para no romper a ningun llamador que todavia no los mande; sin ellos el
+    -- movimiento se aplica igual, solo que la fila de aud.AUDITORIA queda sin
+    -- actor y sin enlace a la bitacora.
+    @AUDITORIA_TRAZA_VC   VARCHAR(64)   = NULL,
+    @AUDITORIA_USUARIO_IT BIGINT        = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -62,6 +68,11 @@ BEGIN
             @Activo         BIT,
             @MovimientoId   BIGINT,
             @MovimientoCuenta BIGINT,
+            @MovimientoTipo   VARCHAR(10),
+            @MovimientoMonto  DECIMAL(18,8),
+            @MovimientoJson   NVARCHAR(MAX),
+            @CuentaAntes      NVARCHAR(MAX),
+            @CuentaDespues    NVARCHAR(MAX),
             @Resultado      BIGINT;
 
     BEGIN TRY
@@ -85,11 +96,17 @@ BEGIN
         END
 
         -- Idempotencia: la clave ya fue aplicada, devolvemos el asiento original.
-        -- La clave es unica en todo el sistema, asi que se busca sin cuenta; si
-        -- el asiento encontrado es de OTRA cuenta, la clave fue reusada y
-        -- devolverlo seria contarle a un titular el movimiento de otro.
+        -- La clave es unica en todo el sistema, asi que se busca sin cuenta.
+        --
+        -- Solo cuenta como reintento si el asiento hallado es de ESTA cuenta y
+        -- ademas del MISMO tipo y monto. Comparar solo la cuenta no alcanza:
+        -- reusar la clave de una recarga para un debito devolveria exito con el
+        -- id de la recarga y el debito no se aplicaria nunca, sin que el
+        -- llamador se entere. Es el mismo criterio que usa pay.EJECUTAR_PAGO_QR.
         SELECT @MovimientoId     = MOVI_ID_IT,
-               @MovimientoCuenta = MOVI_CUENTA_ID_IT
+               @MovimientoCuenta = MOVI_CUENTA_ID_IT,
+               @MovimientoTipo   = MOVI_TIPO_VC,
+               @MovimientoMonto  = MOVI_MONTO_DE
         FROM   pay.MOVIMIENTO
         WHERE  MOVI_IDEMPOTENCIA_VC = @MOVI_IDEMPOTENCIA_VC;
 
@@ -98,6 +115,8 @@ BEGIN
             COMMIT TRANSACTION;
 
             IF @MovimientoCuenta = @CuentaId
+               AND @MovimientoTipo  = @MOVI_TIPO_VC
+               AND @MovimientoMonto = @MOVI_MONTO_DE
                 SELECT CAST(@MovimientoId AS BIGINT) AS Resultado;
             ELSE
                 SELECT CAST(-9 AS BIGINT) AS Resultado;
@@ -170,10 +189,32 @@ BEGIN
 
         SET @Resultado = CAST(SCOPE_IDENTITY() AS BIGINT);
 
+        -- El asiento recien nacido, como quedo guardado. El JSON pasa por una
+        -- variable porque T-SQL no admite una subconsulta como argumento de EXEC.
+        SET @MovimientoJson = (SELECT * FROM pay.MOVIMIENTO WHERE MOVI_ID_IT = @Resultado
+                               FOR JSON PATH, WITHOUT_ARRAY_WRAPPER);
+
+        EXEC aud.REGISTRAR_AUDITORIA
+             'pay', 'MOVIMIENTO', @Resultado, 'INSERT',
+             NULL, @MovimientoJson,
+             @AUDITORIA_USUARIO_IT, @AUDITORIA_TRAZA_VC;
+
+        -- La cuenta antes y despues del cambio de saldo.
+        SET @CuentaAntes = (SELECT * FROM pay.CUENTA WHERE CUEN_ID_IT = @CuentaId
+                            FOR JSON PATH, WITHOUT_ARRAY_WRAPPER);
+
         UPDATE pay.CUENTA
         SET    CUEN_SALDO_DE               = @SaldoPosterior,
                CUEN_FECHA_ACTUALIZACION_DT = GETDATE()
         WHERE  CUEN_ID_IT = @CuentaId;
+
+        SET @CuentaDespues = (SELECT * FROM pay.CUENTA WHERE CUEN_ID_IT = @CuentaId
+                              FOR JSON PATH, WITHOUT_ARRAY_WRAPPER);
+
+        EXEC aud.REGISTRAR_AUDITORIA
+             'pay', 'CUENTA', @CuentaId, 'UPDATE',
+             @CuentaAntes, @CuentaDespues,
+             @AUDITORIA_USUARIO_IT, @AUDITORIA_TRAZA_VC;
 
         COMMIT TRANSACTION;
 
@@ -189,11 +230,15 @@ BEGIN
         IF ERROR_NUMBER() IN (2601, 2627)
         BEGIN
             SELECT @MovimientoId     = MOVI_ID_IT,
-                   @MovimientoCuenta = MOVI_CUENTA_ID_IT
+                   @MovimientoCuenta = MOVI_CUENTA_ID_IT,
+                   @MovimientoTipo   = MOVI_TIPO_VC,
+                   @MovimientoMonto  = MOVI_MONTO_DE
             FROM   pay.MOVIMIENTO
             WHERE  MOVI_IDEMPOTENCIA_VC = @MOVI_IDEMPOTENCIA_VC;
 
             IF @MovimientoCuenta = @CuentaId
+               AND @MovimientoTipo  = @MOVI_TIPO_VC
+               AND @MovimientoMonto = @MOVI_MONTO_DE
                 SELECT CAST(@MovimientoId AS BIGINT) AS Resultado;
             ELSE
                 SELECT CAST(-9 AS BIGINT) AS Resultado;

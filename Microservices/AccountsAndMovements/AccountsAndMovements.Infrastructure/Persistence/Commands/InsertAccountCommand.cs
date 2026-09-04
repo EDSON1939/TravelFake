@@ -1,4 +1,5 @@
 using AccountsAndMovements.Domain.Entities;
+using Core.Infrastructure.Audit;
 using Core.Infrastructure.Database.Commands;
 using Microsoft.Data.SqlClient;
 using System.Data;
@@ -9,7 +10,7 @@ namespace AccountsAndMovements.Infrastructure.Persistence.Commands;
 /// Crea la cuenta y, si trae saldo inicial, su asiento de apertura, todo en una
 /// transaccion. Devuelve el ID o <see cref="AccountResult.DUPLICATE"/>.
 /// </summary>
-public class InsertAccountCommand(AccountEntity entity) : SqlCommandBase<long>
+public class InsertAccountCommand(AccountEntity entity, IAuditContext audit) : SqlCommandBase<long>
 {
     public override string Name => "pay.INSERT_CUENTA";
 
@@ -20,5 +21,6 @@ public class InsertAccountCommand(AccountEntity entity) : SqlCommandBase<long>
         new() { ParameterName = "@CUEN_MONEDA_ID_IT",     SqlDbType = SqlDbType.BigInt,                             Value = entity.CoinId    },
         new() { ParameterName = "@CUEN_MONEDA_CODIGO_VC", SqlDbType = SqlDbType.VarChar, Size = 10,                 Value = entity.CoinCode  },
         new() { ParameterName = "@CUEN_SALDO_INICIAL_DE", SqlDbType = SqlDbType.Decimal, Precision = 18, Scale = 8, Value = entity.Balance   },
+        ..AuditParameters.For(audit),
     ];
 }

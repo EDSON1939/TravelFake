@@ -3,54 +3,14 @@
     "Name": "Todos los microservicios",
     "Projects": [
       {
-        "Path": "Microservices\\Coin\\Coin.Api\\Coin.Api.csproj",
-        "Action": "Start",
-        "DebugTarget": "Coin.Api"
-      },
-      {
-        "Path": "Microservices\\Client\\Client.Api\\Client.Api.csproj",
-        "Action": "Start",
-        "DebugTarget": "Client.Api"
-      },
-      {
-        "Path": "Microservices\\Transfer\\Transfer.Api\\Transfer.Api.csproj",
-        "Action": "Start",
-        "DebugTarget": "Transfer.Api"
-      },
-      {
-        "Path": "Microservices\\Gateway\\Gateway.Api\\Gateway.Api.csproj",
-        "Action": "Start",
-        "DebugTarget": "Gateway.Api"
-      },
-      {
-        "Path": "Microservices\\Account\\Account.Api\\Account.Api.csproj",
-        "Action": "Start",
-        "DebugTarget": "Account.Api"
-      },
-      {
         "Path": "Microservices\\Auth\\Auth.Api\\Auth.Api.csproj",
         "Action": "Start",
         "DebugTarget": "Auth.Api"
       },
       {
-        "Path": "Microservices\\CanazaVentas\\CanazaVentas.Api\\CanazaVentas.Api.csproj",
-        "Action": "Start",
-        "DebugTarget": "CanazaVentas.Api"
-      },
-      {
         "Path": "Microservices\\AccountsAndMovements\\AccountsAndMovements.Api\\AccountsAndMovements.Api.csproj",
         "Action": "Start",
         "DebugTarget": "AccountsAndMovements.Api"
-      }
-    ]
-  },
-  {
-    "Name": "Solo Gateway",
-    "Projects": [
-      {
-        "Path": "Microservices\\Gateway\\Gateway.Api\\Gateway.Api.csproj",
-        "Action": "Start",
-        "DebugTarget": "Gateway.Api"
       }
     ]
   }
