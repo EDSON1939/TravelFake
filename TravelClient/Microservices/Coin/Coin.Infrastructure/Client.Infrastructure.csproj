@@ -1,0 +1,14 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Coin.Domain\Client.Domain.csproj" />
+    <ProjectReference Include="..\..\..\YastaCoin\Shared\Core.Infrastructure\Core.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

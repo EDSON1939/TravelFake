@@ -1,0 +1,112 @@
+syntax = "proto3";
+option csharp_namespace = "Coin.Api.Grpc";
+package coin;
+
+import "base_response.proto";
+
+// ─── Service ─────────────────────────────────────────────────────────────────
+// Note: every monetary value travels as an invariant decimal string (e.g. "6.86").
+// protobuf has no decimal type and double would lose precision on money.
+service Coin {
+    rpc GetCoin            (GetCoinRequestPb)            returns (GetCoinBaseResponsePb);
+    rpc GetCoins           (GetCoinsRequestPb)           returns (GetCoinsBaseResponsePb);
+    rpc CreateCoin         (CreateCoinRequestPb)         returns (CoinMutationBaseResponsePb);
+    rpc UpdateCoin         (UpdateCoinRequestPb)         returns (CoinMutationBaseResponsePb);
+    rpc UpdateCoinStatus   (UpdateCoinStatusRequestPb)   returns (CoinMutationBaseResponsePb);
+    rpc DeleteCoin         (DeleteCoinRequestPb)         returns (CoinMutationBaseResponsePb);
+
+    // Converts an amount of any coin to bolivianos (BOB)
+    rpc ConvertToBoliviano (ConvertToBolivianoRequestPb) returns (ConvertToBolivianoBaseResponsePb);
+}
+
+// ─── Requests ────────────────────────────────────────────────────────────────
+message GetCoinRequestPb {
+    int64 coin_id = 1;
+}
+
+message GetCoinsRequestPb {
+    bool only_active = 1;
+}
+
+message CreateCoinRequestPb {
+    string name     = 1;
+    string code     = 2;
+    string buy_rate = 3;  // decimal, e.g. "6.86"
+}
+
+message UpdateCoinRequestPb {
+    int64  coin_id   = 1;
+    string name      = 2;
+    string code      = 3;
+    string buy_rate  = 4;  // decimal, e.g. "6.86"
+    bool   is_active = 5;
+}
+
+message UpdateCoinStatusRequestPb {
+    int64 coin_id   = 1;
+    bool  is_active = 2;
+}
+
+message DeleteCoinRequestPb {
+    int64 coin_id = 1;
+}
+
+message ConvertToBolivianoRequestPb {
+    int64  coin_id = 1;
+    string amount  = 2;  // decimal, e.g. "1500.50"
+}
+
+// ─── Data ────────────────────────────────────────────────────────────────────
+message CoinDataPb {
+    int64  coin_id    = 1;
+    string name       = 2;
+    string code       = 3;
+    string buy_rate   = 4;
+    bool   is_active  = 5;
+    string created_at = 6;
+    string updated_at = 7;
+}
+
+message ConversionDataPb {
+    int64  coin_id       = 1;
+    string code          = 2;
+    string name          = 3;
+    string exchange_rate = 4;  // applied exchange rate
+    string amount        = 5;  // original amount
+    string amount_in_bs  = 6;  // equivalent in bolivianos
+    string target_code   = 7;  // BOB
+    string target_name   = 8;  // Boliviano
+}
+
+// ─── Responses ───────────────────────────────────────────────────────────────
+message GetCoinBaseResponsePb {
+    string                          message     = 1;
+    CoinDataPb                      data        = 2;
+    repeated base_response.ErrorPb  errors      = 3;
+    base_response.ExceptionDetailPb exception   = 4;
+    string                          status_code = 5;
+}
+
+message GetCoinsBaseResponsePb {
+    string                          message     = 1;
+    repeated CoinDataPb             data        = 2;
+    repeated base_response.ErrorPb  errors      = 3;
+    base_response.ExceptionDetailPb exception   = 4;
+    string                          status_code = 5;
+}
+
+message CoinMutationBaseResponsePb {
+    string                          message     = 1;
+    int64                           data        = 2;
+    repeated base_response.ErrorPb  errors      = 3;
+    base_response.ExceptionDetailPb exception   = 4;
+    string                          status_code = 5;
+}
+
+message ConvertToBolivianoBaseResponsePb {
+    string                          message     = 1;
+    ConversionDataPb                data        = 2;
+    repeated base_response.ErrorPb  errors      = 3;
+    base_response.ExceptionDetailPb exception   = 4;
+    string                          status_code = 5;
+}

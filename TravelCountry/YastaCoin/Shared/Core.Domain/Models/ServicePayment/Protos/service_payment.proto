@@ -1,0 +1,222 @@
+syntax = "proto3";
+
+import "base_response.proto";
+
+option csharp_namespace = "Core.Domain";
+
+package service_payment;
+
+service ServicePayment {
+  rpc SearchCustomer(SearchCustomerRequestPb) returns (SearchCustomerResponsePb);
+  rpc Payment(PaymentRequestPb) returns (PaymentResponsePb);
+  rpc Reverse(ReverseRequestPb) returns (ReverseResponsePb);
+  rpc GetPaymentDocument(PaymentDocumentRequestPb) returns (PaymentDocumentResponsePb);
+}
+
+message SearchCustomerRequestPb {
+	string channel_code = 1;
+	string company_code = 2;
+	string service_code = 3;
+	string terminal = 4;
+	string operator = 5;
+	optional AdditionalInformationPb additional_information = 6;
+	repeated CriteriaPb search_criteria = 7;
+    repeated BillingCriteriaPb billing_criteria=8;
+	bool additional_search_criteria = 9;
+}
+
+message AdditionalInformationPb{
+	string category_code = 1;
+	string company_code = 2;
+	string service_code = 3;
+	string service_name = 4;
+	string information = 5;
+}
+
+message CriteriaPb {
+	string key = 1;
+	string value = 2;
+}
+message BillingCriteriaPb
+{
+	string code = 1;
+    string name = 2;
+    string description = 3;
+    string value = 4;
+	repeated CriteriaPb items = 5;
+    string type = 6;
+    int32 order = 7;
+    bool required = 8;
+}
+
+message SearchCustomerResponsePb {
+	string message = 1;
+	CustomerPb data = 2;
+	repeated base_response.ErrorPb errors = 3;
+	optional base_response.ExceptionPb exception = 4;
+	optional string status_code = 5;
+}
+
+message CustomerPb {
+	string tracking_id = 1;
+	string authorization_code = 2;
+	string additional_information = 3;
+	repeated PaymentOptionPb payment_options = 4;
+	repeated SearchCriteriaPb search_criteria = 5;
+}
+
+message SearchCriteriaPb{
+	string name = 1;
+	string description = 2;
+	string code = 3;
+	int32 order = 4;
+	string control_type = 5;
+	optional string entry_type = 6;
+	optional string entry_validation = 7;
+	bool required = 8;
+	bool visible = 9;
+	bool enabled = 10;
+	repeated CriteriaPb items = 11;
+	string value = 12;
+}
+
+message PaymentOptionPb { 
+	string payment_option_id = 1;
+	string customer_name = 2;
+	string description = 3;
+	double total_amount = 4;
+	double total_mora = 5;
+	repeated PendingPaymentItemPb pending_payment_items = 6;
+	repeated BillingCriteriaPb billing_criteria = 7;
+}
+
+message PendingPaymentItemPb{
+	string debt_id = 1;
+	double amount = 2;
+	double amount_mora = 3;
+	double minimum_payment_amount = 4;
+	bool amount_text_edit = 5;
+	string expiration_date = 6;
+	repeated string description_debt = 7;
+}
+
+message PaymentRequestPb{
+	string channel_code = 1;
+	string company_code = 2;
+	string service_code = 3;
+	string terminal = 4;
+	string operator_name = 5;
+	string customer_name = 6;
+	string agency_code = 7;
+	string branch_code = 8;
+	string currency = 9;
+	double total_amount = 10;
+	string channel_trace_id = 11;
+	string operator_id = 12;
+	repeated CriteriaPb search_criteria = 13;
+	string additional_information = 14;
+	string authorization_code = 15;
+	string security_code = 16;
+	PaymentOptionPaymentPb payment_option = 17;
+	BillingInformationPb billing_information = 18;
+}
+
+message PaymentOptionPaymentPb{
+	string payment_option_id = 1;
+	bool swift_pay_accounting = 2;
+	string account_number_debt = 3;
+	repeated PaymentItemPb pending_payment_items = 4;
+}
+
+message PaymentItemPb{
+	string debt_id = 1;
+	double amount = 2;
+	double arrear = 3;
+}
+
+message BillingInformationPb{
+	string name = 1;
+	string documentType = 2;
+	string documentNumber = 3;
+	string documentComplement = 4;
+	string email = 5;
+}
+
+message PaymentResponsePb{
+	string message = 1;
+	repeated ExecutedPaymentPb data = 2;
+	repeated base_response.ErrorPb errors = 3;
+	optional base_response.ExceptionPb exception = 4;
+	optional string status_code = 5;
+}
+
+message ExecutedPaymentPb{
+	int64 transaction_id = 1;
+	string debt_id = 2;
+	string message = 3;
+	string date = 4;
+	string conciliation_id = 5;
+	string operation_number = 6;
+}
+
+message ReverseRequestPb{
+	string reason = 1;
+	string transaction_id = 2;
+	string type = 3;
+	TransactionPb transaction = 4;
+}
+
+message TransactionPb {
+	int64 transacation_id =1;
+	string session_id = 2;
+	string channel_code = 3;
+	string company_code = 4;
+	string service_code = 5;
+	double amount = 6;
+	string currency = 7;
+	double arrear = 8;
+	string client_code = 9;
+	string customer_name = 10;
+	string payment_id = 11;
+	string debt_id = 12;
+	bool multiple = 13;
+	string gloss = 14;
+	string request_date = 15;
+	string response_date = 16;
+	string response_time = 17; 
+	string agency_branch_code = 18;
+	string channel_user = 19;
+	string terminal = 20;
+	string trace_id = 21;
+	string tracker_id = 22;
+	string response_detail = 23;
+	string process_code = 24;
+}
+
+message ReverseResponsePb{
+	string message = 1;
+	ExecutedReversePb data = 2;
+	repeated base_response.ErrorPb errors = 3;
+	optional base_response.ExceptionPb exception = 4;
+	optional string status_code = 5;
+}
+
+message ExecutedReversePb{
+	string transaction_id = 1;
+}
+
+message PaymentDocumentRequestPb {
+	string transaction_id = 1;
+}
+
+message PaymentDocumentResponsePb {
+	string message = 1;
+	PaymentDocumentPb data = 2;
+	repeated base_response.ErrorPb errors = 3;
+	optional base_response.ExceptionPb exception = 4;
+	optional string status_code = 5;
+}
+
+message PaymentDocumentPb {
+	string content = 1;
+}

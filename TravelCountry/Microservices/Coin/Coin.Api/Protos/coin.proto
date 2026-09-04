@@ -1,0 +1,68 @@
+syntax = "proto3";
+option csharp_namespace = "Coin.Api.Grpc";
+package coin;
+
+import "base_response.proto";
+
+// ─── Servicio ────────────────────────────────────────────────────────────────
+service Coin {
+    rpc GetCoin    (GetCoinRequestPb)    returns (GetCoinBaseResponsePb);
+    rpc GetCoins   (GetCoinsRequestPb)   returns (GetCoinsBaseResponsePb);
+    rpc CreateCoin (CreateCoinRequestPb) returns (CoinMutationBaseResponsePb);
+    rpc UpdateCoin (UpdateCoinRequestPb) returns (CoinMutationBaseResponsePb);
+}
+
+// ─── Requests ────────────────────────────────────────────────────────────────
+message GetCoinRequestPb {
+    string code = 1;
+}
+
+message GetCoinsRequestPb {
+    bool only_active = 1;
+}
+
+message CreateCoinRequestPb {
+    string name   = 1;
+    string code   = 2;
+    string symbol = 3;
+}
+
+message UpdateCoinRequestPb {
+    int64 coin_id   = 1;
+    bool  is_active = 2;
+}
+
+// ─── Data ────────────────────────────────────────────────────────────────────
+message CoinDataPb {
+    int64  coin_id    = 1;
+    string name       = 2;
+    string code       = 3;
+    string symbol     = 4;
+    bool   is_active  = 5;
+    string created_at = 6;
+}
+
+// ─── Responses ───────────────────────────────────────────────────────────────
+message GetCoinBaseResponsePb {
+    string                          message     = 1;
+    CoinDataPb                      data        = 2;
+    repeated base_response.ErrorPb  errors      = 3;
+    base_response.ExceptionDetailPb exception   = 4;
+    string                          status_code = 5;
+}
+
+message GetCoinsBaseResponsePb {
+    string                          message     = 1;
+    repeated CoinDataPb             data        = 2;
+    repeated base_response.ErrorPb  errors      = 3;
+    base_response.ExceptionDetailPb exception   = 4;
+    string                          status_code = 5;
+}
+
+message CoinMutationBaseResponsePb {
+    string                          message     = 1;
+    int64                           data        = 2;
+    repeated base_response.ErrorPb  errors      = 3;
+    base_response.ExceptionDetailPb exception   = 4;
+    string                          status_code = 5;
+}

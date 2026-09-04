@@ -1,0 +1,80 @@
+syntax = "proto3";
+option csharp_namespace = "Country.Api.Grpc";
+package country;
+
+import "base_response.proto";
+
+// ─── Servicio ────────────────────────────────────────────────────────────────
+service Country {
+    rpc GetCountry          (GetCountryRequestPb)          returns (GetCountryBaseResponsePb);
+    rpc GetCountries        (GetCountriesRequestPb)        returns (GetCountriesBaseResponsePb);
+    rpc CreateCountry       (CreateCountryRequestPb)       returns (CountryMutationBaseResponsePb);
+    rpc UpdateCountry       (UpdateCountryRequestPb)       returns (CountryMutationBaseResponsePb);
+    rpc UpdateCountryStatus (UpdateCountryStatusRequestPb) returns (CountryMutationBaseResponsePb);
+    rpc DeleteCountry       (DeleteCountryRequestPb)       returns (CountryMutationBaseResponsePb);
+}
+
+// ─── Requests ────────────────────────────────────────────────────────────────
+message GetCountryRequestPb {
+    int64 country_id = 1;
+}
+
+message GetCountriesRequestPb {
+    bool only_active = 1;
+}
+
+message CreateCountryRequestPb {
+    string name = 1;
+    string code = 2;
+}
+
+message UpdateCountryRequestPb {
+    int64  country_id = 1;
+    string name       = 2;
+    string code       = 3;
+    bool   is_active  = 4;
+}
+
+message UpdateCountryStatusRequestPb {
+    int64 country_id = 1;
+    bool  is_active  = 2;
+}
+
+message DeleteCountryRequestPb {
+    int64 country_id = 1;
+}
+
+// ─── Data ────────────────────────────────────────────────────────────────────
+message CountryDataPb {
+    int64  country_id = 1;
+    string name       = 2;
+    string code       = 3;
+    bool   is_active  = 4;
+    string created_at = 5;
+    string updated_at = 6;
+}
+
+// ─── Responses ───────────────────────────────────────────────────────────────
+message GetCountryBaseResponsePb {
+    string                          message     = 1;
+    CountryDataPb                   data        = 2;
+    repeated base_response.ErrorPb  errors      = 3;
+    base_response.ExceptionDetailPb exception   = 4;
+    string                          status_code = 5;
+}
+
+message GetCountriesBaseResponsePb {
+    string                          message     = 1;
+    repeated CountryDataPb          data        = 2;
+    repeated base_response.ErrorPb  errors      = 3;
+    base_response.ExceptionDetailPb exception   = 4;
+    string                          status_code = 5;
+}
+
+message CountryMutationBaseResponsePb {
+    string                          message     = 1;
+    int64                           data        = 2;
+    repeated base_response.ErrorPb  errors      = 3;
+    base_response.ExceptionDetailPb exception   = 4;
+    string                          status_code = 5;
+}

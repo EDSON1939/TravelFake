@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+option csharp_namespace = "Core.Domain.Grpc";
+
+package base_response;
+
+message ErrorPb{
+	string field = 1;
+	string message = 2;
+}
+
+message ExceptionPb{
+	string message = 1;
+	string stack_trace = 2;
+}
+
+message ExceptionDetailPb{
+	string message = 1;
+}
