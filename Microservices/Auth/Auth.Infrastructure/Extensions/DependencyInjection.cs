@@ -2,6 +2,7 @@ using Auth.Domain.ExternalServices;
 using Auth.Domain.Repositories;
 using Auth.Domain.Security;
 using Auth.Infrastructure.ExternalServices;
+using Auth.Infrastructure.ExternalServices.Fakes;
 using Auth.Infrastructure.Repositories;
 using Auth.Infrastructure.Security;
 using Core.Infrastructure.Extensions;
@@ -19,6 +20,18 @@ public static class DependencyInjection
     {
         services.AddDatabaseDependence(configuration);
         services.AddScoped<IUserRepository, UserRepository>();
+        services.AddSingleton<IPasswordHasher, PasswordHasher>();
+        services.AddSingleton<IJwtTokenGenerator, JwtTokenGenerator>();
+
+        // Clientes todavía no existe como servicio desplegado. Con
+        // "UseFakeExternalServices": true se reemplaza por un catálogo en
+        // memoria y este microservicio corre solo. Apagar la bandera devuelve el
+        // cableado gRPC real sin tocar código.
+        if (configuration.GetValue<bool>("UseFakeExternalServices"))
+        {
+            services.AddSingleton<IClientService, FakeClientService>();
+            return services;
+        }
 
         // Reenvía el JWT recibido hacia el siguiente salto de la cadena.
         services.AddTransient<TokenPropagationHandler>();
@@ -27,9 +40,6 @@ public static class DependencyInjection
             "ClientClient", configuration.GetSection("Services:Client"))
             .AddHttpMessageHandler<TokenPropagationHandler>();
         services.AddScoped<IClientService, ClientService>();
-
-        services.AddSingleton<IPasswordHasher, PasswordHasher>();
-        services.AddSingleton<IJwtTokenGenerator, JwtTokenGenerator>();
 
         return services;
     }

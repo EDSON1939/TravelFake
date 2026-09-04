@@ -39,7 +39,7 @@ public class AutoMapperProfile : Profile
             .ForMember(d => d.ConvertedAmount,  o => o.MapFrom(s => s.ConvertedAmount.ToString(CultureInfo.InvariantCulture)))
             // proto3 no admite escalares nulos: 0 y "" son los equivalentes de
             // "este asiento no vino de un pago QR".
-            .ForMember(d => d.MerchantId,       o => o.MapFrom(s => s.MerchantId ?? 0))
+            .ForMember(d => d.CommerceId,       o => o.MapFrom(s => s.CommerceId ?? 0))
             .ForMember(d => d.QrCode,           o => o.MapFrom(s => s.QrCode ?? string.Empty))
             .ForMember(d => d.CreatedAt,        o => o.MapFrom(s => s.CreatedAt.ToString("o")));
 

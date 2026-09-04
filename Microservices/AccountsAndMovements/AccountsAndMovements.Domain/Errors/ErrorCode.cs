@@ -9,8 +9,8 @@ public struct ErrorCode
     // ── Exigidos por el reto ─────────────────────────────────────────────────
     public const string CUSTOMER_NOT_FOUND      = nameof(CUSTOMER_NOT_FOUND);
     public const string CUSTOMER_INACTIVE       = nameof(CUSTOMER_INACTIVE);
-    public const string MERCHANT_NOT_FOUND      = nameof(MERCHANT_NOT_FOUND);
-    public const string MERCHANT_INACTIVE       = nameof(MERCHANT_INACTIVE);
+    public const string COMMERCE_NOT_FOUND      = nameof(COMMERCE_NOT_FOUND);
+    public const string COMMERCE_INACTIVE       = nameof(COMMERCE_INACTIVE);
     public const string QR_NOT_FOUND            = nameof(QR_NOT_FOUND);
     public const string QR_EXPIRED              = nameof(QR_EXPIRED);
     public const string QR_ALREADY_USED         = nameof(QR_ALREADY_USED);
@@ -24,10 +24,11 @@ public struct ErrorCode
     public const string ACCOUNT_NOT_FOUND          = nameof(ACCOUNT_NOT_FOUND);
     public const string ACCOUNT_INACTIVE           = nameof(ACCOUNT_INACTIVE);
     public const string ACCOUNT_DUPLICATE          = nameof(ACCOUNT_DUPLICATE);
-    public const string MERCHANT_ACCOUNT_NOT_FOUND = nameof(MERCHANT_ACCOUNT_NOT_FOUND);
-    public const string MERCHANT_ACCOUNT_INACTIVE  = nameof(MERCHANT_ACCOUNT_INACTIVE);
-    public const string MERCHANT_CURRENCY_INVALID  = nameof(MERCHANT_CURRENCY_INVALID);
+    public const string COMMERCE_ACCOUNT_NOT_FOUND = nameof(COMMERCE_ACCOUNT_NOT_FOUND);
+    public const string COMMERCE_ACCOUNT_INACTIVE  = nameof(COMMERCE_ACCOUNT_INACTIVE);
+    public const string COMMERCE_CURRENCY_INVALID  = nameof(COMMERCE_CURRENCY_INVALID);
     public const string CURRENCY_MISMATCH          = nameof(CURRENCY_MISMATCH);
+    public const string QR_TYPE_NOT_SUPPORTED      = nameof(QR_TYPE_NOT_SUPPORTED);
     public const string EXCHANGE_RATE_NOT_FOUND    = nameof(EXCHANGE_RATE_NOT_FOUND);
     public const string INSERT_FAILED              = nameof(INSERT_FAILED);
     public const string MOVEMENT_FAILED            = nameof(MOVEMENT_FAILED);

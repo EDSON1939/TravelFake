@@ -3,8 +3,8 @@ namespace AccountsAndMovements.Application.Common;
 public record AccountResponse(
     long      AccountId,
     string    Number,
-    string    OwnerType,
-    long      OwnerId,
+    string    AccountType,
+    long      HolderId,
     long      CoinId,
     string    CoinCode,
     decimal   Balance,

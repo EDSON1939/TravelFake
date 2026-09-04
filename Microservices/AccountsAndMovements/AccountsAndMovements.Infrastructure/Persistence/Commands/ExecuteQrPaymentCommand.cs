@@ -15,13 +15,13 @@ namespace AccountsAndMovements.Infrastructure.Persistence.Commands;
 /// </summary>
 public class ExecuteQrPaymentCommand(PaymentEntity payment, IAuditContext audit) : SqlCommandBase<long>
 {
-    public override string Name => "pay.EJECUTAR_PAGO_QR";
+    public override string Name => "commerce.EJECUTAR_PAGO_QR";
 
     public override IEnumerable<SqlParameter>? Parameters =>
     [
         new() { ParameterName = "@CUENTA_ORIGEN_VC",  SqlDbType = SqlDbType.VarChar,  Size = 20,                 Value = payment.ClientAccountNumber   },
-        new() { ParameterName = "@CUENTA_DESTINO_VC", SqlDbType = SqlDbType.VarChar,  Size = 20,                 Value = payment.MerchantAccountNumber },
-        new() { ParameterName = "@COMERCIO_ID_IT",    SqlDbType = SqlDbType.BigInt,                              Value = payment.MerchantId            },
+        new() { ParameterName = "@CUENTA_DESTINO_VC", SqlDbType = SqlDbType.VarChar,  Size = 20,                 Value = payment.CommerceAccountNumber },
+        new() { ParameterName = "@COMERCIO_ID_IT",    SqlDbType = SqlDbType.BigInt,                              Value = payment.CommerceId            },
         new() { ParameterName = "@QR_CODIGO_VC",      SqlDbType = SqlDbType.VarChar,  Size = 64,                 Value = payment.QrCode                },
         new() { ParameterName = "@MONTO_ORIGEN_DE",   SqlDbType = SqlDbType.Decimal,  Precision = 18, Scale = 8, Value = payment.OriginalAmount        },
         new() { ParameterName = "@MONEDA_ORIGEN_VC",  SqlDbType = SqlDbType.VarChar,  Size = 10,                 Value = payment.OriginalCurrency      },

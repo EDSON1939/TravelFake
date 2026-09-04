@@ -9,7 +9,7 @@ public interface IMovementRepository
 
     /// <summary>Historial del reto: titular, rango de fechas y estado, paginado.</summary>
     Task<IEnumerable<MovementEntity>> GetHistory(
-        string ownerType, long ownerId, DateTime? from, DateTime? to,
+        string accountType, long holderId, DateTime? from, DateTime? to,
         string? status, int pageNumber, int pageSize, CancellationToken ct = default);
 
     /// <summary>

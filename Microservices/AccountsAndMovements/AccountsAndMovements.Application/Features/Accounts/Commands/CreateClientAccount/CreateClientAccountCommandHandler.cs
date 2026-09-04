@@ -42,11 +42,11 @@ public class CreateClientAccountCommandHandler(
 
         var id = await repository.Insert(new AccountEntity
         {
-            OwnerType = AccountOwnerType.CLIENTE,
-            OwnerId   = request.ClientId,
-            CoinId    = currency.CoinId,
-            CoinCode  = currency.Code,
-            Balance   = request.InitialBalance
+            AccountType = AccountType.CLIENT,
+            HolderId    = request.ClientId,
+            CoinId      = currency.CoinId,
+            CoinCode    = currency.Code,
+            Balance     = request.InitialBalance
         }, ct);
 
         return AccountCreation.ToResponse(id);

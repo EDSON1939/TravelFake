@@ -1,5 +1,7 @@
 ﻿using Grpc.Core;
 using Grpc.Core.Interceptors;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 
 namespace Core.AuditTrail.Grpc
@@ -18,6 +20,15 @@ namespace Core.AuditTrail.Grpc
             ServerCallContext context,
             UnaryServerMethod<TRequest, TResponse> next)
         {
+            // Los RPC marcados con [AllowAnonymous] no exigen token. gRPC copia
+            // los atributos del metodo a la metadata del endpoint, asi que la
+            // excepcion queda escrita al lado del metodo y no en una lista de
+            // nombres que nadie actualiza cuando se renombra un RPC.
+            if (context.GetHttpContext().GetEndpoint()?.Metadata.GetMetadata<IAllowAnonymous>() is not null)
+            {
+                return await next(request, context);
+            }
+
             var metadata = context.RequestHeaders;
             var tokenHeader = metadata.GetValue("Authorization");
             if (string.IsNullOrEmpty(tokenHeader) || !tokenHeader.StartsWith("Bearer "))

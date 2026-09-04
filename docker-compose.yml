@@ -64,12 +64,17 @@ services:
       $$SQL -Q \"IF DB_ID('DB_QRBolivia')  IS NULL CREATE DATABASE DB_QRBolivia;\";
       $$SQL -Q \"IF DB_ID('DB_YastaCoinE') IS NULL CREATE DATABASE DB_YastaCoinE;\";
       echo '→ QR Bolivia: tablas';
-      $$SQL -d DB_QRBolivia -i /scripts/AccountsAndMovements/Tables/pay.CUENTA.sql;
-      $$SQL -d DB_QRBolivia -i /scripts/AccountsAndMovements/Tables/pay.MOVIMIENTO.sql;
+      $$SQL -d DB_QRBolivia -i /scripts/AccountsAndMovements/Tables/commerce.CUENTA.sql;
+      $$SQL -d DB_QRBolivia -i /scripts/AccountsAndMovements/Tables/commerce.MOVIMIENTO.sql;
       echo '→ QR Bolivia: procedimientos';
-      $$SQL -d DB_QRBolivia -i /scripts/AccountsAndMovements/StoredProcedures/pay.INSERT_CUENTA.sql;
-      $$SQL -d DB_QRBolivia -i /scripts/AccountsAndMovements/StoredProcedures/pay.APLICAR_MOVIMIENTO.sql;
-      $$SQL -d DB_QRBolivia -i /scripts/AccountsAndMovements/StoredProcedures/pay.EJECUTAR_PAGO_QR.sql;
+      $$SQL -d DB_QRBolivia -i /scripts/AccountsAndMovements/StoredProcedures/commerce.INSERT_CUENTA.sql;
+      $$SQL -d DB_QRBolivia -i /scripts/AccountsAndMovements/StoredProcedures/commerce.APLICAR_MOVIMIENTO.sql;
+      $$SQL -d DB_QRBolivia -i /scripts/AccountsAndMovements/StoredProcedures/commerce.EJECUTAR_PAGO_QR.sql;
+      echo '→ Auth: tabla y procedimientos';
+      $$SQL -d DB_YastaCoinE -i /scripts/Auth/Tables/commerce.USUARIO.sql;
+      $$SQL -d DB_YastaCoinE -i /scripts/Auth/StoredProcedures/commerce.INSERT_USUARIO.sql;
+      $$SQL -d DB_YastaCoinE -i /scripts/Auth/StoredProcedures/commerce.DELETE_USUARIO.sql;
+      $$SQL -d DB_YastaCoinE -i /scripts/Auth/StoredProcedures/commerce.REGISTRAR_INTENTO_LOGIN.sql;
       echo '→ Auditoria, en las dos bases';
       for DB in DB_QRBolivia DB_YastaCoinE; do
         $$SQL -d $$DB -i /scripts/Core/Tables/aud.BITACORA.sql;
@@ -97,6 +102,8 @@ services:
       # Fuera del codigo fuente, como pide el reto. En produccion esto sale de
       # un gestor de secretos, no de un .env.
       Jwt__TokenSecret: ${JWT_TOKEN_SECRET:?definir JWT_TOKEN_SECRET en .env}
+      # Clientes todavia no existe como contenedor.
+      UseFakeExternalServices: "true"
     ports:
       - "52127:8080"
     restart: unless-stopped
@@ -113,8 +120,14 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Docker
       Database__ConnectionString: "Server=sqlserver,1433;Database=DB_QRBolivia;User Id=sa;Password=${MSSQL_SA_PASSWORD};TrustServerCertificate=True;MultipleActiveResultSets=True;"
-      # Clientes, Comercios, QR y Monedas todavia no existen como contenedores.
+      # Valor por defecto de los cuatro servicios externos, ninguno de los cuales
+      # es todavia un contenedor de este compose.
       UseFakeExternalServices: "true"
+      # Comercios ya esta desplegado, pero fuera de esta red. Descomentar las dos
+      # lineas y poner el host real para consumirlo en vez del catalogo en
+      # memoria; host.docker.internal apunta a la maquina que corre Docker.
+      # Services__Commerce__UseFake: "false"
+      # Services__Commerce__BaseAddress: "http://host.docker.internal:52142"
       DevAuth__Enabled: "true"
       DevAuth__ClientId: "1"
     ports:

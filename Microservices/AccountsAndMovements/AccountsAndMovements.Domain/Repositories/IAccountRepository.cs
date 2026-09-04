@@ -10,11 +10,11 @@ public interface IAccountRepository
     /// Resuelve (titular, moneda) -> cuenta. Es el paso que traduce "cliente 7 que
     /// paga en USD" al numero de cuenta que necesita el SP para mover saldo.
     /// </summary>
-    Task<AccountEntity?> GetByOwnerAndCoin(
-        string ownerType, long ownerId, string coinCode, CancellationToken ct = default);
+    Task<AccountEntity?> GetByHolderAndCoin(
+        string accountType, long holderId, string coinCode, CancellationToken ct = default);
 
-    Task<IEnumerable<AccountEntity>> GetByOwner(
-        string ownerType, long ownerId, bool onlyActive, CancellationToken ct = default);
+    Task<IEnumerable<AccountEntity>> GetByHolder(
+        string accountType, long holderId, bool onlyActive, CancellationToken ct = default);
 
     Task<long> Insert(AccountEntity entity, CancellationToken ct = default);
 }

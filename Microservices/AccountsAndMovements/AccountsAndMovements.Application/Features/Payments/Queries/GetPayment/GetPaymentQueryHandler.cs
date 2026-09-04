@@ -38,9 +38,9 @@ public class GetPaymentQueryHandler(IMovementRepository repository)
         return BaseResponse<PaymentResponse>.Success(new PaymentResponse(
             debit.TransactionCode,
             debit.MovementId,
-            debit.OwnerId,
+            debit.HolderId,
             debit.AccountNumber,
-            debit.MerchantId ?? 0,
+            debit.CommerceId ?? 0,
             // El nombre del comercio no vive en el asiento: la fuente es el
             // microservicio de Comercios, y esta consulta no depende de el.
             string.Empty,

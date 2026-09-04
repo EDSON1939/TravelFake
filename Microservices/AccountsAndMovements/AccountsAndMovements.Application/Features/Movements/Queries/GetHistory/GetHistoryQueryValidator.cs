@@ -7,12 +7,12 @@ public class GetHistoryQueryValidator : AbstractValidator<GetHistoryQuery>
 {
     public GetHistoryQueryValidator()
     {
-        RuleFor(x => x.OwnerType)
+        RuleFor(x => x.AccountType)
             .NotEmpty().WithMessage("El tipo de titular es requerido.")
-            .Must(x => AccountOwnerType.All.Contains(x))
-            .WithMessage("El tipo de titular debe ser CLIENTE o COMERCIO.");
+            .Must(x => AccountType.All.Contains(x))
+            .WithMessage("El tipo de cuenta debe ser CLIENT o COMMERCE.");
 
-        RuleFor(x => x.OwnerId)
+        RuleFor(x => x.HolderId)
             .GreaterThan(0).WithMessage("El identificador del titular es requerido.");
 
         RuleFor(x => x.Status)

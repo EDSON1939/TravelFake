@@ -16,15 +16,15 @@ namespace AccountsAndMovements.Application.Features.Payments.Commands.ExecuteQrP
 ///
 /// El reparto es deliberado: las validaciones que dependen de datos ajenos se
 /// hacen aca, y las dos que solo son confiables con la fila bloqueada -saldo
-/// suficiente y QR no cobrado- viven en pay.EJECUTAR_PAGO_QR. Validar el saldo
-/// desde aca seria una lectura sin valor: entre la lectura y el pago puede
-/// entrar otra operacion.
+/// suficiente y QR no cobrado- viven en commerce.EJECUTAR_PAGO_QR. Validar el
+/// saldo desde aca seria una lectura sin valor: entre la lectura y el pago
+/// puede entrar otra operacion.
 /// </summary>
 public class ExecuteQrPaymentCommandHandler(
     IAccountRepository accountRepository,
     IMovementRepository movementRepository,
     IClientService clientService,
-    IMerchantService merchantService,
+    ICommerceService commerceService,
     IQrService qrService,
     ICurrencyService currencyService,
     ILogger<ExecuteQrPaymentCommandHandler> logger)
@@ -64,14 +64,14 @@ public class ExecuteQrPaymentCommandHandler(
             return qrError;
 
         // ── 6. Comercio ──────────────────────────────────────────────────────
-        var merchant = await merchantService.GetById(qr.MerchantId, ct);
-        if (merchant is null)
-            return Error(Domain.Errors.ErrorCode.MERCHANT_NOT_FOUND,
-                         Domain.Errors.ErrorMessage.MERCHANT_NOT_FOUND);
+        var commerce = await commerceService.GetById(qr.CommerceId, ct);
+        if (commerce is null)
+            return Error(Domain.Errors.ErrorCode.COMMERCE_NOT_FOUND,
+                         Domain.Errors.ErrorMessage.COMMERCE_NOT_FOUND);
 
-        if (!merchant.IsActive)
-            return Error(Domain.Errors.ErrorCode.MERCHANT_INACTIVE,
-                         Domain.Errors.ErrorMessage.MERCHANT_INACTIVE);
+        if (!commerce.IsActive)
+            return Error(Domain.Errors.ErrorCode.COMMERCE_INACTIVE,
+                         Domain.Errors.ErrorMessage.COMMERCE_INACTIVE);
 
         // ── 7. Moneda del cliente ────────────────────────────────────────────
         var currency = await currencyService.GetByCode(currencyCode, ct);
@@ -79,12 +79,12 @@ public class ExecuteQrPaymentCommandHandler(
             return Error(Domain.Errors.ErrorCode.CURRENCY_NOT_SUPPORTED,
                          Domain.Errors.ErrorMessage.CURRENCY_NOT_SUPPORTED);
 
-        // El QR cobra en la moneda del comercio. Si no coinciden, el catalogo
-        // esta inconsistente y acreditar seria inventar plata en otra moneda.
-        var targetCurrency = qr.CurrencyCode;
-        if (targetCurrency != merchant.CurrencyCode)
-            return Error(Domain.Errors.ErrorCode.CURRENCY_MISMATCH,
-                         Domain.Errors.ErrorMessage.CURRENCY_MISMATCH);
+        // El contrato oficial de QR no publica moneda de cobro: la unica fuente
+        // es el comercio, que por regla del reto siempre liquida en BOB. No se
+        // pone aca una comparacion entre dos constantes que valen lo mismo: la
+        // verificacion que protege la plata es la del SP, que compara contra la
+        // moneda REAL de las dos cuentas y devuelve CURRENCY_MISMATCH.
+        var targetCurrency = commerce.CurrencyCode;
 
         // ── 8. Tipo de cambio ────────────────────────────────────────────────
         decimal rate;
@@ -114,33 +114,39 @@ public class ExecuteQrPaymentCommandHandler(
 
         // ── 10. Cuentas. Esto NO consulta saldo para decidir: solo traduce
         //        (titular, moneda) al numero que necesita el SP.
-        var clientAccount = await accountRepository.GetByOwnerAndCoin(
-            AccountOwnerType.CLIENTE, client.ClientId, currencyCode, ct);
+        var clientAccount = await accountRepository.GetByHolderAndCoin(
+            AccountType.CLIENT, client.ClientId, currencyCode, ct);
         if (clientAccount is null)
             return Error(Domain.Errors.ErrorCode.ACCOUNT_NOT_FOUND,
                          Domain.Errors.ErrorMessage.ACCOUNT_NOT_FOUND);
 
-        var merchantAccount = await accountRepository.GetByOwnerAndCoin(
-            AccountOwnerType.COMERCIO, merchant.MerchantId, targetCurrency, ct);
-        if (merchantAccount is null)
-            return Error(Domain.Errors.ErrorCode.MERCHANT_ACCOUNT_NOT_FOUND,
-                         Domain.Errors.ErrorMessage.MERCHANT_ACCOUNT_NOT_FOUND);
+        var commerceAccount = await accountRepository.GetByHolderAndCoin(
+            AccountType.COMMERCE, commerce.CommerceId, targetCurrency, ct);
+        if (commerceAccount is null)
+            return Error(Domain.Errors.ErrorCode.COMMERCE_ACCOUNT_NOT_FOUND,
+                         Domain.Errors.ErrorMessage.COMMERCE_ACCOUNT_NOT_FOUND);
 
         // ── 11-13. Ejecucion atomica: debito, credito y los dos asientos ─────
         var transactionCode = Guid.NewGuid().ToString();
 
+        // El contrato oficial no publica referencia. Se guarda el id del QR en su
+        // microservicio: es lo que permite volver a esa fila desde el asiento,
+        // cosa que el codigo -ya guardado en MOVI_QR_CODIGO_VC- no aportaria de
+        // nuevo.
+        var reference = $"QR-{qr.QrId}";
+
         var result = await movementRepository.ExecuteQrPayment(new PaymentEntity
         {
             ClientAccountNumber   = clientAccount.Number,
-            MerchantAccountNumber = merchantAccount.Number,
-            MerchantId            = merchant.MerchantId,
+            CommerceAccountNumber = commerceAccount.Number,
+            CommerceId            = commerce.CommerceId,
             QrCode                = qrCode,
             OriginalAmount        = request.Amount,
             OriginalCurrency      = currencyCode,
             ExchangeRate          = rate,
             ConvertedAmount       = convertedAmount,
             TargetCurrency        = targetCurrency,
-            Reference             = qr.Reference,
+            Reference             = reference,
             IdempotencyKey        = idempotencyKey,
             TransactionCode       = transactionCode,
             Description           = request.Description.Trim()
@@ -154,14 +160,15 @@ public class ExecuteQrPaymentCommandHandler(
         // que hay que responder, no los valores que trae este request.
         var applied = await movementRepository.GetByIdempotencyKey(idempotencyKey, ct);
 
-        // ── 14. Marcar el QR como usado ──────────────────────────────────────
+        // ── 14. Consumir el QR ───────────────────────────────────────────────
         // Best effort a proposito: el dinero ya se movio y esta llamada no puede
         // deshacerlo. Que el QR no se pague dos veces lo garantiza el indice
-        // unico UQ_PAY_MOVIMIENTO_QR, no el estado que guarde el servicio de QR.
-        var marked = await qrService.MarkAsUsed(qrCode, applied?.TransactionCode ?? transactionCode, ct);
-        if (!marked)
+        // unico UQ_COMMERCE_MOVIMIENTO_QR, no el estado que guarde el servicio
+        // de QR.
+        var consumed = await qrService.Consume(qrCode, ct);
+        if (!consumed)
             logger.LogWarning(
-                "Pago {Transaction} aplicado pero el QR {QrCode} no pudo marcarse como usado en el servicio de QR.",
+                "Pago {Transaction} aplicado pero el QR {QrCode} no pudo consumirse en el servicio de QR.",
                 applied?.TransactionCode ?? transactionCode, qrCode);
 
         // ── 15. Resultado ────────────────────────────────────────────────────
@@ -170,9 +177,9 @@ public class ExecuteQrPaymentCommandHandler(
             result,
             client.ClientId,
             clientAccount.Number,
-            merchant.MerchantId,
-            merchant.Name,
-            merchantAccount.Number,
+            commerce.CommerceId,
+            commerce.Name,
+            commerceAccount.Number,
             qrCode,
             request.Amount,
             currencyCode,
@@ -181,7 +188,7 @@ public class ExecuteQrPaymentCommandHandler(
             targetCurrency,
             applied?.BalanceAfter ?? clientAccount.Balance - request.Amount,
             MovementStatus.COMPLETED,
-            qr.Reference,
+            applied?.Reference ?? reference,
             idempotencyKey,
             request.Description.Trim(),
             applied?.CreatedAt ?? DateTime.Now,
@@ -199,7 +206,7 @@ public class ExecuteQrPaymentCommandHandler(
     private static BaseResponse<PaymentResponse> Replay(
         MovementEntity previous, ExecuteQrPaymentCommand request, string qrCode, string currencyCode)
     {
-        var sameOperation = previous.OwnerId          == request.ClientId
+        var sameOperation = previous.HolderId         == request.ClientId
                          && previous.QrCode           == qrCode
                          && previous.OriginalCurrency == currencyCode
                          && previous.OriginalAmount   == request.Amount;
@@ -211,9 +218,9 @@ public class ExecuteQrPaymentCommandHandler(
         return BaseResponse<PaymentResponse>.Success(new PaymentResponse(
             previous.TransactionCode,
             previous.MovementId,
-            previous.OwnerId,
+            previous.HolderId,
             previous.AccountNumber,
-            previous.MerchantId ?? 0,
+            previous.CommerceId ?? 0,
             string.Empty,
             string.Empty,
             previous.QrCode ?? qrCode,
@@ -231,6 +238,14 @@ public class ExecuteQrPaymentCommandHandler(
             IsDuplicate: true));
     }
 
+    /// <summary>
+    /// El contrato publica es_valido, pero es solo "estado == ACTIVE": usarlo
+    /// colapsaria en un unico error los tres casos que el reto pide distinguir.
+    /// Por eso se miran estado, activo y fecha por separado.
+    ///
+    /// El orden importa: primero lo que ya ocurrio (usado), despues lo que
+    /// caduco, y al final lo que nunca estuvo habilitado.
+    /// </summary>
     private static BaseResponse<PaymentResponse>? ValidateQr(QrInfo qr)
     {
         if (qr.Status == QrStatus.USED)
@@ -243,9 +258,21 @@ public class ExecuteQrPaymentCommandHandler(
             return Error(Domain.Errors.ErrorCode.QR_EXPIRED,
                          Domain.Errors.ErrorMessage.QR_EXPIRED);
 
-        if (qr.Status != QrStatus.ACTIVE)
+        // Dos formas de estar deshabilitado: estado distinto de ACTIVE, o el
+        // flag activo en false. El contrato oficial da de baja un QR por el
+        // flag, dejando el estado en ACTIVE, asi que mirar solo el estado
+        // dejaria pasar a cobrar un QR retirado.
+        if (qr.Status != QrStatus.ACTIVE || !qr.IsActive)
             return Error(Domain.Errors.ErrorCode.QR_INACTIVE,
                          Domain.Errors.ErrorMessage.QR_INACTIVE);
+
+        // Un QR MULTIPLE se cobra muchas veces y el libro mayor no lo admite:
+        // UQ_COMMERCE_MOVIMIENTO_QR deja un unico DEBITO por codigo. Sin este
+        // corte el primer cobro saldria bien y el segundo devolveria
+        // QR_ALREADY_USED, que para un QR recurrente es una mentira.
+        if (qr.Type == QrType.MULTIPLE)
+            return Error(Domain.Errors.ErrorCode.QR_TYPE_NOT_SUPPORTED,
+                         Domain.Errors.ErrorMessage.QR_TYPE_NOT_SUPPORTED);
 
         return null;
     }
@@ -264,13 +291,13 @@ public class ExecuteQrPaymentCommandHandler(
             Domain.Errors.ErrorCode.INSUFFICIENT_FUNDS,
             Domain.Errors.ErrorMessage.INSUFFICIENT_FUNDS),
 
-        PaymentResult.MERCHANT_ACCOUNT_NOT_FOUND => Error(
-            Domain.Errors.ErrorCode.MERCHANT_ACCOUNT_NOT_FOUND,
-            Domain.Errors.ErrorMessage.MERCHANT_ACCOUNT_NOT_FOUND),
+        PaymentResult.COMMERCE_ACCOUNT_NOT_FOUND => Error(
+            Domain.Errors.ErrorCode.COMMERCE_ACCOUNT_NOT_FOUND,
+            Domain.Errors.ErrorMessage.COMMERCE_ACCOUNT_NOT_FOUND),
 
-        PaymentResult.MERCHANT_ACCOUNT_INACTIVE => Error(
-            Domain.Errors.ErrorCode.MERCHANT_ACCOUNT_INACTIVE,
-            Domain.Errors.ErrorMessage.MERCHANT_ACCOUNT_INACTIVE),
+        PaymentResult.COMMERCE_ACCOUNT_INACTIVE => Error(
+            Domain.Errors.ErrorCode.COMMERCE_ACCOUNT_INACTIVE,
+            Domain.Errors.ErrorMessage.COMMERCE_ACCOUNT_INACTIVE),
 
         PaymentResult.QR_ALREADY_USED => Error(
             Domain.Errors.ErrorCode.QR_ALREADY_USED,

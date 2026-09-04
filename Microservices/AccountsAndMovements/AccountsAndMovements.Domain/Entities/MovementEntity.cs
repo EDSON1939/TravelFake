@@ -11,8 +11,8 @@ public class MovementEntity
     public long     MovementId       { get; set; }
     public long     AccountId        { get; set; }
     public string   AccountNumber    { get; set; } = string.Empty;
-    public string   OwnerType        { get; set; } = string.Empty;
-    public long     OwnerId          { get; set; }
+    public string   AccountType      { get; set; } = string.Empty;
+    public long     HolderId         { get; set; }
     public string   Type             { get; set; } = string.Empty;
     public string   Status           { get; set; } = string.Empty;
 
@@ -28,7 +28,7 @@ public class MovementEntity
     public decimal  ConvertedAmount  { get; set; }
     public string   TargetCurrency   { get; set; } = string.Empty;
 
-    public long?    MerchantId       { get; set; }
+    public long?    CommerceId       { get; set; }
     public string?  QrCode           { get; set; }
     public string   Reference        { get; set; } = string.Empty;
     /// <summary>Clave de idempotencia enviada por el llamador (ej: TX-2026-000001).</summary>

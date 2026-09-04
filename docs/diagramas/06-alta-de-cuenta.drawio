@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" type="device">
+  <diagram id="alta-de-cuenta" name="Alta de cuenta">
+<mxGraphModel dx="1100" dy="1200" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1150" pageHeight="1150" math="0" shadow="0">
+  <root>
+    <mxCell id="0" />
+    <mxCell id="1" parent="0" />
+
+    <mxCell id="tit" value="Alta de cuenta — cliente extranjero y comercio boliviano" style="text;html=1;fontSize=20;fontStyle=1;align=center;verticalAlign=middle;fontColor=#1F3A34;" vertex="1" parent="1">
+      <mxGeometry x="60" y="20" width="1030" height="30" as="geometry" />
+    </mxCell>
+    <mxCell id="sub" value="Dos RPC distintos que convergen: este servicio es dueño del saldo, no del catalogo de personas ni del de monedas" style="text;html=1;fontSize=12;align=center;fontColor=#3D4A47;" vertex="1" parent="1">
+      <mxGeometry x="60" y="52" width="1030" height="20" as="geometry" />
+    </mxCell>
+
+    <mxCell id="c1" value="CreateClientAccount&#10;client_id · coin_code · initial_balance" style="ellipse;whiteSpace=wrap;html=1;fillColor=#DFEEEA;strokeColor=#0C5C52;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="100" y="95" width="290" height="60" as="geometry" />
+    </mxCell>
+
+    <mxCell id="m1" value="CreateCommerceAccount&#10;commerce_id · initial_balance&#10;(sin moneda: siempre BOB)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#F7EEDA;strokeColor=#835710;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="510" y="95" width="290" height="60" as="geometry" />
+    </mxCell>
+
+    <mxCell id="anon" value="[AllowAnonymous]&#10;no exige token: el comercio se identifica&#10;con el commerce_id del request" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F7EEDA;strokeColor=#835710;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="850" y="95" width="240" height="60" as="geometry" />
+    </mxCell>
+
+    <mxCell id="d1" value="¿El cliente existe&#10;en el MS de Clientes?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#3D4A47;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="125" y="195" width="240" height="85" as="geometry" />
+    </mxCell>
+
+    <mxCell id="d2" value="¿El comercio existe&#10;en el MS de Comercios?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#3D4A47;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="535" y="195" width="240" height="85" as="geometry" />
+    </mxCell>
+
+    <mxCell id="e1" value="CUSTOMER_NOT_FOUND&#10;CUSTOMER_INACTIVE" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F6E8E2;strokeColor=#9B3C23;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="20" y="310" width="180" height="45" as="geometry" />
+    </mxCell>
+
+    <mxCell id="e2" value="COMMERCE_NOT_FOUND&#10;COMMERCE_INACTIVE" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F6E8E2;strokeColor=#9B3C23;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="850" y="310" width="180" height="45" as="geometry" />
+    </mxCell>
+
+    <mxCell id="d3" value="¿La moneda existe y esta activa&#10;en el MS de Monedas?&#10;cliente: la que pidio · comercio: BOB fija" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#3D4A47;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="330" y="390" width="300" height="100" as="geometry" />
+    </mxCell>
+
+    <mxCell id="e3" value="CURRENCY_NOT_SUPPORTED" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F6E8E2;strokeColor=#9B3C23;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="750" y="415" width="240" height="45" as="geometry" />
+    </mxCell>
+
+    <mxCell id="nota1" value="De la moneda sale el CoinId que se guarda en la cuenta:&#10;no alcanza con el codigo" style="text;html=1;fontSize=10;align=left;fontColor=#6A7975;" vertex="1" parent="1">
+      <mxGeometry x="60" y="415" width="250" height="40" as="geometry" />
+    </mxCell>
+
+    <mxCell id="zona" value="commerce.INSERT_CUENTA — UNA transaccion" style="rounded=0;whiteSpace=wrap;html=1;dashed=1;dashPattern=8 8;strokeColor=#0C5C52;strokeWidth=2;fillColor=none;verticalAlign=top;fontSize=11;fontColor=#0C5C52;fontStyle=1;align=center;spacingTop=6;" vertex="1" parent="1">
+      <mxGeometry x="180" y="530" width="790" height="330" as="geometry" />
+    </mxCell>
+
+    <mxCell id="s1" value="INSERT en commerce.CUENTA&#10;el numero se deriva del ID generado, no puede colisionar" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#3D4A47;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="230" y="570" width="380" height="55" as="geometry" />
+    </mxCell>
+
+    <mxCell id="d4" value="¿Saldo inicial &gt; 0?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#3D4A47;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="260" y="650" width="320" height="70" as="geometry" />
+    </mxCell>
+
+    <mxCell id="s2" value="Asiento de CREDITO de apertura en commerce.MOVIMIENTO&#10;el saldo nunca existe sin respaldo en el libro mayor" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#DFEEEA;strokeColor=#0C5C52;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="230" y="745" width="380" height="55" as="geometry" />
+    </mxCell>
+
+    <mxCell id="uq" value="UQ_COMMERCE_CUENTA_TITULAR&#10;una cuenta por titular y moneda&#10;&#10;Si el titular ya tiene cuenta en esa moneda,&#10;el SP devuelve -1 y no escribe nada" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F7EEDA;strokeColor=#835710;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="670" y="600" width="270" height="100" as="geometry" />
+    </mxCell>
+
+    <mxCell id="s3" value="COMMIT" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#DFEEEA;strokeColor=#0C5C52;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="330" y="815" width="180" height="35" as="geometry" />
+    </mxCell>
+
+    <mxCell id="map" value="AccountCreation.ToResponse traduce el codigo del SP" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#EAF0EE;strokeColor=#6A7975;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="290" y="890" width="360" height="40" as="geometry" />
+    </mxCell>
+
+    <mxCell id="ok" value="id &gt; 0&#10;SUC000 + id de la cuenta" style="ellipse;whiteSpace=wrap;html=1;fillColor=#E1F0E6;strokeColor=#1D6B3B;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="160" y="975" width="240" height="55" as="geometry" />
+    </mxCell>
+
+    <mxCell id="dup" value="id = -1&#10;ACCOUNT_DUPLICATE" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F6E8E2;strokeColor=#9B3C23;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="430" y="975" width="200" height="55" as="geometry" />
+    </mxCell>
+
+    <mxCell id="fail" value="cualquier otro &lt;= 0&#10;INSERT_FAILED" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F6E8E2;strokeColor=#9B3C23;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="660" y="975" width="200" height="55" as="geometry" />
+    </mxCell>
+
+    <mxCell id="a1" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#3D4A47;" edge="1" parent="1" source="c1" target="d1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="a2" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#3D4A47;" edge="1" parent="1" source="m1" target="d2"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="a3" style="edgeStyle=orthogonalEdgeStyle;html=1;dashed=1;strokeColor=#835710;" edge="1" parent="1" source="anon" target="m1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="a4" value="no / inactivo" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#9B3C23;fontSize=10;" edge="1" parent="1" source="d1" target="e1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="a5" value="no / inactivo" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#9B3C23;fontSize=10;" edge="1" parent="1" source="d2" target="e2"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="a6" value="si" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#0C5C52;fontSize=10;" edge="1" parent="1" source="d1" target="d3"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="a7" value="si" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#0C5C52;fontSize=10;" edge="1" parent="1" source="d2" target="d3"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="a8" value="no" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#9B3C23;fontSize=10;" edge="1" parent="1" source="d3" target="e3"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="a9" value="si" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#0C5C52;fontSize=10;" edge="1" parent="1" source="d3" target="s1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="a10" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#0C5C52;" edge="1" parent="1" source="s1" target="d4"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="a11" value="si" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#0C5C52;fontSize=10;" edge="1" parent="1" source="d4" target="s2"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="a12" value="no" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#6A7975;fontSize=10;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" edge="1" parent="1" source="d4" target="s3"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="a13" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#0C5C52;" edge="1" parent="1" source="s2" target="s3"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="a14" style="edgeStyle=orthogonalEdgeStyle;html=1;dashed=1;strokeColor=#835710;" edge="1" parent="1" source="uq" target="s1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="a15" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#3D4A47;" edge="1" parent="1" source="s3" target="map"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="a16" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#1D6B3B;" edge="1" parent="1" source="map" target="ok"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="a17" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#9B3C23;" edge="1" parent="1" source="map" target="dup"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="a18" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#9B3C23;" edge="1" parent="1" source="map" target="fail"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+  </root>
+</mxGraphModel>
+  </diagram>
+</mxfile>

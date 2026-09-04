@@ -1,9 +1,18 @@
 // =============================================================================
-// Contrato CONSUMIDO del microservicio de QR (reto QR Bolivia).
+// Contrato CONSUMIDO del microservicio de QR (reto QR Bolivia). Es el contrato
+// oficial de ese equipo: no se toca ni un numero de campo. Lo que este servicio
+// necesita y el contrato no publica -moneda de cobro y referencia- se resuelve
+// en el adaptador, no cambiando el proto.
 //
-// MarkQrAsUsed se llama DESPUES de que el dinero ya se movio. Que ese QR no
-// pueda pagarse dos veces lo garantiza el indice unico UQ_PAY_MOVIMIENTO_QR de
-// este servicio; esta llamada solo mantiene al servicio de QR al dia.
+// De los cuatro RPC solo se usan dos:
+//   GetQrByCode  lectura previa al pago; si falla, el pago no puede seguir.
+//   ConsumeQr    se llama DESPUES de que el dinero ya se movio. Que ese QR no
+//                pueda pagarse dos veces lo garantiza el indice unico
+//                UQ_COMMERCE_MOVIMIENTO_QR de este servicio; esta llamada solo
+//                mantiene al servicio de QR al dia.
+//
+// CreateQr y GetQrById quedan declarados porque son parte del contrato oficial;
+// este servicio no los invoca.
 // =============================================================================
 syntax = "proto3";
 option csharp_namespace = "Qr.Api.Grpc";
@@ -11,37 +20,52 @@ package qr;
 
 import "base_response.proto";
 
+// ─── Servicio ────────────────────────────────────────────────────────────────
 service Qr {
-    rpc GetQr        (GetQrRequestPb)        returns (GetQrBaseResponsePb);
-    rpc MarkQrAsUsed (MarkQrAsUsedRequestPb) returns (QrMutationBaseResponsePb);
+    rpc CreateQr    (CreateQrRequestPb)     returns (QrMutationBaseResponsePb);
+    rpc GetQrById   (GetQrByIdRequestPb)    returns (GetQrBaseResponsePb);
+    rpc GetQrByCode (GetQrByCodeRequestPb)  returns (GetQrBaseResponsePb);
+    rpc ConsumeQr   (ConsumeQrRequestPb)    returns (QrMutationBaseResponsePb);
 }
 
-message GetQrRequestPb {
+// ─── Requests ────────────────────────────────────────────────────────────────
+message CreateQrRequestPb {
+    int64  comercio_id       = 1;
+    string monto             = 2;  // decimal como string (ej: 12.50)
+    string tipo              = 3;  // UNICO | MULTIPLE
+    string fecha_expiracion  = 4;  // ISO 8601
+}
+
+message GetQrByIdRequestPb {
+    int64 id = 1;
+}
+
+message GetQrByCodeRequestPb {
     string code = 1;
 }
 
-message MarkQrAsUsedRequestPb {
-    string code             = 1;
-    // Codigo de la operacion que lo consumio, para trazabilidad cruzada.
-    string transaction_code = 2;
+message ConsumeQrRequestPb {
+    string code = 1;
 }
 
+// ─── Data ────────────────────────────────────────────────────────────────────
 message QrDataPb {
-    string code          = 1;
-    int64  merchant_id   = 2;
-    string merchant_name = 3;
-    // Monto que cobra el QR, decimal serializado como string.
-    string amount        = 4;
-    // Moneda del cobro: BOB.
-    string currency_code = 5;
-    string reference     = 6;
-    // ACTIVE | EXPIRED | USED | CANCELLED
-    string status        = 7;
-    string created_at    = 8;
-    // Vacio cuando el QR no expira.
-    string expires_at    = 9;
+    int64  qr_id                = 1;
+    string codigo               = 2;
+    int64  comercio_id          = 3;
+    string monto                = 4;
+    string tipo                 = 5;  // UNICO | MULTIPLE
+    string fecha_expiracion     = 6;
+    string estado               = 7;  // ACTIVE | USED | EXPIRED
+    bool   activo               = 8;
+    // Vacio cuando nunca se actualizo.
+    string fecha_actualizacion  = 9;
+    string fecha_creacion       = 10;
+    // true si el estado es ACTIVE (QR válido)
+    bool   es_valido            = 11;
 }
 
+// ─── Responses ───────────────────────────────────────────────────────────────
 message GetQrBaseResponsePb {
     string                          message     = 1;
     QrDataPb                        data        = 2;

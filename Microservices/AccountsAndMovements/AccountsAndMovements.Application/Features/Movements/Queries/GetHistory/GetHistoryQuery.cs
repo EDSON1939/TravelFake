@@ -9,8 +9,8 @@ namespace AccountsAndMovements.Application.Features.Movements.Queries.GetHistory
 /// fechas y estado, los tres opcionales.
 /// </summary>
 public record GetHistoryQuery(
-    string    OwnerType,
-    long      OwnerId,
+    string    AccountType,
+    long      HolderId,
     DateTime? DateFrom,
     DateTime? DateTo,
     string?   Status,

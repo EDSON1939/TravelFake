@@ -13,7 +13,7 @@ namespace AccountsAndMovements.Infrastructure.Persistence.Commands;
 /// </summary>
 public class ApplyMovementCommand(MovementEntity movement, IAuditContext audit) : SqlCommandBase<long>
 {
-    public override string Name => "pay.APLICAR_MOVIMIENTO";
+    public override string Name => "commerce.APLICAR_MOVIMIENTO";
 
     public override IEnumerable<SqlParameter>? Parameters =>
     [

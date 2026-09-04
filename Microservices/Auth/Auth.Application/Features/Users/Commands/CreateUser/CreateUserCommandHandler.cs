@@ -25,8 +25,8 @@ public class CreateUserCommandHandler(
 
         // El vínculo con el cliente se resuelve contra el MS de Client, igual que
         // hacen Account y Transfer. Guardar un ClientId sin verificarlo dejaría
-        // usuarios apuntando a clientes inexistentes, y coin.USUARIO no puede
-        // tener FK porque coin.CLIENTE la gobierna otro microservicio.
+        // usuarios apuntando a clientes inexistentes, y commerce.USUARIO no
+        // puede tener FK porque CLIENTE la gobierna otro microservicio.
         long? clientId = null;
 
         if (!string.IsNullOrWhiteSpace(request.Document))
@@ -45,8 +45,8 @@ public class CreateUserCommandHandler(
 
             // Un cliente tiene una sola credencial: si ya tiene usuario, crear
             // otro daría dos accesos a la misma cuenta bancaria.
-            var owner = await repository.GetByClientId(client.ClientId, ct);
-            if (owner is not null)
+            var existingUser = await repository.GetByClientId(client.ClientId, ct);
+            if (existingUser is not null)
                 return BaseResponse<long>.Error(
                     Domain.Errors.ErrorCode.CLIENT_ALREADY_HAS_USER,
                     Domain.Errors.ErrorMessage.CLIENT_ALREADY_HAS_USER);

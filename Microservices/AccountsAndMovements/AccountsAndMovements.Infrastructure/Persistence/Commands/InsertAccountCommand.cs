@@ -12,15 +12,15 @@ namespace AccountsAndMovements.Infrastructure.Persistence.Commands;
 /// </summary>
 public class InsertAccountCommand(AccountEntity entity, IAuditContext audit) : SqlCommandBase<long>
 {
-    public override string Name => "pay.INSERT_CUENTA";
+    public override string Name => "commerce.INSERT_CUENTA";
 
     public override IEnumerable<SqlParameter>? Parameters =>
     [
-        new() { ParameterName = "@CUEN_TITULAR_TIPO_VC",  SqlDbType = SqlDbType.VarChar, Size = 20,                 Value = entity.OwnerType },
-        new() { ParameterName = "@CUEN_TITULAR_ID_IT",    SqlDbType = SqlDbType.BigInt,                             Value = entity.OwnerId   },
-        new() { ParameterName = "@CUEN_MONEDA_ID_IT",     SqlDbType = SqlDbType.BigInt,                             Value = entity.CoinId    },
-        new() { ParameterName = "@CUEN_MONEDA_CODIGO_VC", SqlDbType = SqlDbType.VarChar, Size = 10,                 Value = entity.CoinCode  },
-        new() { ParameterName = "@CUEN_SALDO_INICIAL_DE", SqlDbType = SqlDbType.Decimal, Precision = 18, Scale = 8, Value = entity.Balance   },
+        new() { ParameterName = "@CUEN_TITULAR_TIPO_VC",  SqlDbType = SqlDbType.VarChar, Size = 20,                 Value = entity.AccountType },
+        new() { ParameterName = "@CUEN_TITULAR_ID_IT",    SqlDbType = SqlDbType.BigInt,                             Value = entity.HolderId   },
+        new() { ParameterName = "@CUEN_MONEDA_ID_IT",     SqlDbType = SqlDbType.BigInt,                             Value = entity.CoinId     },
+        new() { ParameterName = "@CUEN_MONEDA_CODIGO_VC", SqlDbType = SqlDbType.VarChar, Size = 10,                 Value = entity.CoinCode   },
+        new() { ParameterName = "@CUEN_SALDO_INICIAL_DE", SqlDbType = SqlDbType.Decimal, Precision = 18, Scale = 8, Value = entity.Balance    },
         ..AuditParameters.For(audit),
     ];
 }

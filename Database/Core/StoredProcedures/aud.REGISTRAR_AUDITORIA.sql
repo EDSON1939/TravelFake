@@ -16,16 +16,16 @@
 -- Ejemplo de uso desde un SP de negocio:
 --
 --   DECLARE @Antes NVARCHAR(MAX) =
---       (SELECT * FROM pay.CUENTA WHERE CUEN_ID_IT = @Id
+--       (SELECT * FROM commerce.CUENTA WHERE CUEN_ID_IT = @Id
 --        FOR JSON PATH, WITHOUT_ARRAY_WRAPPER);
 --
---   UPDATE pay.CUENTA SET CUEN_SALDO_DE = @Nuevo WHERE CUEN_ID_IT = @Id;
+--   UPDATE commerce.CUENTA SET CUEN_SALDO_DE = @Nuevo WHERE CUEN_ID_IT = @Id;
 --
 --   DECLARE @Despues NVARCHAR(MAX) =
---       (SELECT * FROM pay.CUENTA WHERE CUEN_ID_IT = @Id
+--       (SELECT * FROM commerce.CUENTA WHERE CUEN_ID_IT = @Id
 --        FOR JSON PATH, WITHOUT_ARRAY_WRAPPER);
 --
---   EXEC aud.REGISTRAR_AUDITORIA 'pay', 'CUENTA', @Id, 'UPDATE',
+--   EXEC aud.REGISTRAR_AUDITORIA 'commerce', 'CUENTA', @Id, 'UPDATE',
 --        @Antes, @Despues, @AUDITORIA_USUARIO_IT, @AUDITORIA_TRAZA_VC;
 -- =============================================================================
 

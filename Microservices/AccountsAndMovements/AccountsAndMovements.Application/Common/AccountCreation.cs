@@ -4,8 +4,8 @@ using Core.Domain.Models;
 namespace AccountsAndMovements.Application.Common;
 
 /// <summary>
-/// Traduce el codigo que devuelve pay.INSERT_CUENTA. Vive aparte porque el alta
-/// de cliente y la de comercio tienen reglas distintas pero comparten este
+/// Traduce el codigo que devuelve commerce.INSERT_CUENTA. Vive aparte porque
+/// el alta de cliente y la de comercio tienen reglas distintas pero comparten
 /// desenlace: duplicar la traduccion garantizaria que alguna quede distinta.
 /// </summary>
 internal static class AccountCreation

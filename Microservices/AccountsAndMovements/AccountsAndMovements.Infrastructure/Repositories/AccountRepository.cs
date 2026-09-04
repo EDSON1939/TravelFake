@@ -13,13 +13,13 @@ public class AccountRepository(IQuery query, ICommand command, IAuditContext aud
     public async Task<AccountEntity?> GetByNumber(string number, CancellationToken ct = default)
         => await query.QuerySqlAsync(new GetAccountByNumberQuery(number), ct);
 
-    public async Task<AccountEntity?> GetByOwnerAndCoin(
-        string ownerType, long ownerId, string coinCode, CancellationToken ct = default)
-        => await query.QuerySqlAsync(new GetAccountByOwnerAndCoinQuery(ownerType, ownerId, coinCode), ct);
+    public async Task<AccountEntity?> GetByHolderAndCoin(
+        string accountType, long holderId, string coinCode, CancellationToken ct = default)
+        => await query.QuerySqlAsync(new GetAccountByHolderAndCoinQuery(accountType, holderId, coinCode), ct);
 
-    public async Task<IEnumerable<AccountEntity>> GetByOwner(
-        string ownerType, long ownerId, bool onlyActive, CancellationToken ct = default)
-        => await query.QuerySqlAsync(new GetAccountsByOwnerQuery(ownerType, ownerId, onlyActive), ct) ?? [];
+    public async Task<IEnumerable<AccountEntity>> GetByHolder(
+        string accountType, long holderId, bool onlyActive, CancellationToken ct = default)
+        => await query.QuerySqlAsync(new GetAccountsByHolderQuery(accountType, holderId, onlyActive), ct) ?? [];
 
     public async Task<long> Insert(AccountEntity entity, CancellationToken ct = default)
         => await command.ExecuteAsync(new InsertAccountCommand(entity, audit), ct);

@@ -10,8 +10,8 @@ public class GetAccountByNumberQuery(string number) : QuerySingleBase<AccountEnt
     public override string SqlStatement => @"
         SELECT CUEN_ID_IT                  AS AccountId,
                CUEN_NUMERO_VC              AS Number,
-               CUEN_TITULAR_TIPO_VC        AS OwnerType,
-               CUEN_TITULAR_ID_IT          AS OwnerId,
+               CUEN_TITULAR_TIPO_VC        AS AccountType,
+               CUEN_TITULAR_ID_IT          AS HolderId,
                CUEN_MONEDA_ID_IT           AS CoinId,
                CUEN_MONEDA_CODIGO_VC       AS CoinCode,
                CUEN_SALDO_DE               AS Balance,
@@ -19,7 +19,7 @@ public class GetAccountByNumberQuery(string number) : QuerySingleBase<AccountEnt
                CUEN_FECHA_CREACION_DT      AS CreatedAt,
                CUEN_FECHA_ACTUALIZACION_DT AS UpdatedAt,
                CUEN_FECHA_ELIMINACION_DT   AS DeletedAt
-        FROM   pay.CUENTA
+        FROM   commerce.CUENTA
         WHERE  CUEN_NUMERO_VC            = @Number
           AND  CUEN_FECHA_ELIMINACION_DT IS NULL";
 

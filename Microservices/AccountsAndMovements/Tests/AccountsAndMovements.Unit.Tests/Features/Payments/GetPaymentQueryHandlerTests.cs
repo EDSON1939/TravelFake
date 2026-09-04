@@ -27,7 +27,7 @@ public class GetPaymentQueryHandlerTests
 
         result.StatusCode.Should().Be(Core.Domain.Errors.ErrorCode.SUC000);
         result.Data!.ClientAccountNumber.Should().Be("QR0000000001");
-        result.Data.MerchantAccountNumber.Should().Be("QR0000000002");
+        result.Data.CommerceAccountNumber.Should().Be("QR0000000002");
         result.Data.ConvertedAmount.Should().Be(139.20m);
         result.Data.ExchangeRate.Should().Be(6.96m);
     }
@@ -76,8 +76,8 @@ public class GetPaymentQueryHandlerTests
     {
         MovementId       = 900,
         AccountNumber    = "QR0000000001",
-        OwnerType        = AccountOwnerType.CLIENTE,
-        OwnerId          = 7,
+        AccountType      = AccountType.CLIENT,
+        HolderId         = 7,
         Type             = MovementType.DEBITO,
         Status           = MovementStatus.COMPLETED,
         Amount           = 20m,
@@ -87,7 +87,7 @@ public class GetPaymentQueryHandlerTests
         ExchangeRate     = 6.96m,
         ConvertedAmount  = 139.20m,
         TargetCurrency   = "BOB",
-        MerchantId       = 55,
+        CommerceId       = 55,
         QrCode           = "QR-BO-0001",
         IdempotencyKey   = "TX-2026-000001",
         TransactionCode  = TransactionCode
@@ -97,8 +97,8 @@ public class GetPaymentQueryHandlerTests
     {
         MovementId      = 901,
         AccountNumber   = "QR0000000002",
-        OwnerType       = AccountOwnerType.COMERCIO,
-        OwnerId         = 55,
+        AccountType     = AccountType.COMMERCE,
+        HolderId        = 55,
         Type            = MovementType.CREDITO,
         Status          = MovementStatus.COMPLETED,
         Amount          = 139.20m,

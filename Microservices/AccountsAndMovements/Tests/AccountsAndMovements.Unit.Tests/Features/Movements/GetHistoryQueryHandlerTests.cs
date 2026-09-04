@@ -32,7 +32,7 @@ public class GetHistoryQueryHandlerTests
             ]);
 
         var result = await _handler.Handle(
-            new GetHistoryQuery(AccountOwnerType.CLIENTE, 7, null, null, null, 1, 20), default);
+            new GetHistoryQuery(AccountType.CLIENT, 7, null, null, null, 1, 20), default);
 
         result.StatusCode.Should().Be(Core.Domain.Errors.ErrorCode.SUC000);
         result.Data.Should().HaveCount(1);
@@ -51,7 +51,7 @@ public class GetHistoryQueryHandlerTests
             .Returns([]);
 
         await _handler.Handle(
-            new GetHistoryQuery(AccountOwnerType.CLIENTE, 7,
+            new GetHistoryQuery(AccountType.CLIENT, 7,
                 new DateTime(2026, 9, 1), new DateTime(2026, 9, 30), null, 1, 20), default);
 
         // La consulta filtra con "menor que": sin correr el limite un día, todo
@@ -70,7 +70,7 @@ public class GetHistoryQueryHandlerTests
             .Returns([]);
 
         await _handler.Handle(
-            new GetHistoryQuery(AccountOwnerType.CLIENTE, 7, null,
+            new GetHistoryQuery(AccountType.CLIENT, 7, null,
                 new DateTime(2026, 9, 30, 18, 0, 0), null, 1, 20), default);
 
         capturedTo.Should().Be(new DateTime(2026, 9, 30, 18, 0, 0));
@@ -87,12 +87,12 @@ public class GetHistoryQueryHandlerTests
             .Returns([]);
 
         await _handler.Handle(
-            new GetHistoryQuery(AccountOwnerType.CLIENTE, 7, null, null, "   ", 1, 20), default);
+            new GetHistoryQuery(AccountType.CLIENT, 7, null, null, "   ", 1, 20), default);
 
         capturedStatus.Should().BeNull();
 
         await _handler.Handle(
-            new GetHistoryQuery(AccountOwnerType.CLIENTE, 7, null, null, "completed", 1, 20), default);
+            new GetHistoryQuery(AccountType.CLIENT, 7, null, null, "completed", 1, 20), default);
 
         capturedStatus.Should().Be(MovementStatus.COMPLETED);
     }

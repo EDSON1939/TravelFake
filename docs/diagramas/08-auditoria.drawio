@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" type="device">
+  <diagram id="auditoria" name="Auditoria">
+<mxGraphModel dx="1150" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1150" pageHeight="900" math="0" shadow="0">
+  <root>
+    <mxCell id="0" />
+    <mxCell id="1" parent="0" />
+
+    <mxCell id="tit" value="Las dos auditorias — aud.BITACORA y aud.AUDITORIA" style="text;html=1;fontSize=20;fontStyle=1;align=center;verticalAlign=middle;fontColor=#1F3A34;" vertex="1" parent="1">
+      <mxGeometry x="60" y="20" width="1030" height="30" as="geometry" />
+    </mxCell>
+    <mxCell id="sub" value="No son lo mismo ni se pueden fusionar: una registra la LLAMADA y la otra el DATO. La diferencia esta en de que lado de la transaccion viven" style="text;html=1;fontSize=12;align=center;fontColor=#3D4A47;" vertex="1" parent="1">
+      <mxGeometry x="60" y="52" width="1030" height="20" as="geometry" />
+    </mxCell>
+
+    <mxCell id="rpc" value="Un RPC que escribe&#10;ApplyMovement · ExecuteQrPayment · CreateClientAccount" style="ellipse;whiteSpace=wrap;html=1;fillColor=#DFEEEA;strokeColor=#0C5C52;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="390" y="90" width="370" height="60" as="geometry" />
+    </mxCell>
+
+    <mxCell id="hb" value="aud.BITACORA — la traza de la LLAMADA" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#EAF0EE;strokeColor=#6A7975;fontSize=13;fontStyle=1;fontColor=#3D4A47;" vertex="1" parent="1">
+      <mxGeometry x="90" y="180" width="450" height="35" as="geometry" />
+    </mxCell>
+
+    <mxCell id="hc" value="aud.AUDITORIA — el ANTES y el DESPUES del dato" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#DFEEEA;strokeColor=#0C5C52;fontSize=13;fontStyle=1;fontColor=#0C5C52;" vertex="1" parent="1">
+      <mxGeometry x="610" y="180" width="450" height="35" as="geometry" />
+    </mxCell>
+
+    <mxCell id="b1" value="La escribe el AuditInterceptor" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#3D4A47;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="120" y="235" width="390" height="38" as="geometry" />
+    </mxCell>
+
+    <mxCell id="c1" value="La escriben los stored procedures de negocio,&#10;nunca la aplicacion" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#3D4A47;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="640" y="235" width="390" height="38" as="geometry" />
+    </mxCell>
+
+    <mxCell id="b2" value="FUERA de la transaccion del negocio.&#10;Corre en el finally, con la respuesta ya decidida" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F7EEDA;strokeColor=#835710;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="120" y="290" width="390" height="50" as="geometry" />
+    </mxCell>
+
+    <mxCell id="c2" value="DENTRO de la transaccion del cambio.&#10;Sin transaccion propia: comparte el destino del llamador" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#DFEEEA;strokeColor=#0C5C52;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="640" y="290" width="390" height="50" as="geometry" />
+    </mxCell>
+
+    <mxCell id="b3" value="EXEC aud.INSERT_BITACORA" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#EAF0EE;strokeColor=#6A7975;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="120" y="355" width="390" height="35" as="geometry" />
+    </mxCell>
+
+    <mxCell id="c3" value="EXEC aud.REGISTRAR_AUDITORIA" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#EAF0EE;strokeColor=#6A7975;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="640" y="355" width="390" height="35" as="geometry" />
+    </mxCell>
+
+    <mxCell id="b4" value="Que guarda&#10;&#10;· metodo y operacion deducida del nombre:&#10;   CONSULTA · ALTA · BAJA · CAMBIO&#10;· usuario, cliente y rol, leidos del JWT&#10;· IP del llamador y TraceId&#10;· el request en JSON, con password y token&#10;   enmascarados antes de escribir&#10;· estado OK o ERROR, codigo y milisegundos" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#3D4A47;fontSize=10;align=left;spacingLeft=12;verticalAlign=top;spacingTop=8;" vertex="1" parent="1">
+      <mxGeometry x="120" y="405" width="390" height="185" as="geometry" />
+    </mxCell>
+
+    <mxCell id="c4" value="Que guarda&#10;&#10;· esquema, tabla y llave del registro&#10;· operacion: INSERT · UPDATE · DELETE&#10;   (una baja logica se registra como DELETE:&#10;   importa la intencion, no la mecanica)&#10;· el dato anterior y el nuevo, la fila entera en&#10;   JSON con FOR JSON PATH — si mañana se agrega&#10;   una columna, se audita sola&#10;· usuario y traza" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#3D4A47;fontSize=10;align=left;spacingLeft=12;verticalAlign=top;spacingTop=8;" vertex="1" parent="1">
+      <mxGeometry x="640" y="405" width="390" height="185" as="geometry" />
+    </mxCell>
+
+    <mxCell id="b5" value="Si la escritura falla: un warning, y la respuesta del&#10;negocio sigue su camino. Auditar la llamada no puede&#10;tumbar la operacion." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F7EEDA;strokeColor=#835710;fontSize=10;align=left;spacingLeft=12;" vertex="1" parent="1">
+      <mxGeometry x="120" y="605" width="390" height="65" as="geometry" />
+    </mxCell>
+
+    <mxCell id="c5" value="Si el INSERT falla, la operacion entera hace rollback.&#10;Un cambio auditado a medias es peor que no auditar,&#10;porque parece completo." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E1F0E6;strokeColor=#1D6B3B;fontSize=10;align=left;spacingLeft=12;" vertex="1" parent="1">
+      <mxGeometry x="640" y="605" width="390" height="65" as="geometry" />
+    </mxCell>
+
+    <mxCell id="link" value="TraceId — el mismo valor viaja en las dos tablas (BITA_TRAZA_VC y AUDI_TRAZA_VC):&#10;de una fila de bitacora se llega a todos los cambios de dato que produjo esa llamada" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DFEEEA;strokeColor=#0C5C52;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="290" y="700" width="570" height="55" as="geometry" />
+    </mxCell>
+
+    <mxCell id="ej" value="Ejemplo — un pago QR deja 1 fila en aud.BITACORA (la llamada) y 4 en aud.AUDITORIA:&#10;los dos asientos que se insertaron y las dos cuentas cuyo saldo cambio" style="text;html=1;fontSize=11;align=center;fontColor=#6A7975;" vertex="1" parent="1">
+      <mxGeometry x="200" y="775" width="750" height="40" as="geometry" />
+    </mxCell>
+
+    <mxCell id="a1" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#6A7975;" edge="1" parent="1" source="rpc" target="hb"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="a2" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#0C5C52;" edge="1" parent="1" source="rpc" target="hc"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="a3" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#3D4A47;" edge="1" parent="1" source="hb" target="b1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="a4" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#3D4A47;" edge="1" parent="1" source="b1" target="b2"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="a5" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#3D4A47;" edge="1" parent="1" source="b2" target="b3"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="a6" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#3D4A47;" edge="1" parent="1" source="hc" target="c1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="a7" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#3D4A47;" edge="1" parent="1" source="c1" target="c2"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="a8" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#3D4A47;" edge="1" parent="1" source="c2" target="c3"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="a9" style="edgeStyle=orthogonalEdgeStyle;html=1;dashed=1;strokeColor=#0C5C52;" edge="1" parent="1" source="b4" target="link"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="a10" style="edgeStyle=orthogonalEdgeStyle;html=1;dashed=1;strokeColor=#0C5C52;" edge="1" parent="1" source="c4" target="link"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+  </root>
+</mxGraphModel>
+  </diagram>
+</mxfile>

@@ -27,15 +27,15 @@ service AccountsAndMovements {
     // ── Cuentas ─────────────────────────────────────────────────────────────
     // Alta de cuentas. Operacion de operador: initial_balance acredita saldo.
     rpc CreateClientAccount   (CreateClientAccountRequestPb)   returns (AccountMutationBaseResponsePb);
-    rpc CreateMerchantAccount (CreateMerchantAccountRequestPb) returns (AccountMutationBaseResponsePb);
+    rpc CreateCommerceAccount (CreateCommerceAccountRequestPb) returns (AccountMutationBaseResponsePb);
 
     rpc GetAccount            (GetAccountRequestPb)            returns (GetAccountBaseResponsePb);
     // Mi cuenta en una moneda y todas mis cuentas. El cliente sale del token.
     rpc GetMyAccount          (GetMyAccountRequestPb)          returns (GetAccountBaseResponsePb);
     rpc GetMyAccounts         (GetMyAccountsRequestPb)         returns (GetAccountsBaseResponsePb);
     // Cuenta del comercio: siempre BOB, por eso no se pide moneda.
-    rpc GetMerchantAccount    (GetMerchantAccountRequestPb)    returns (GetAccountBaseResponsePb);
-    rpc GetMerchantAccounts   (GetMerchantAccountsRequestPb)   returns (GetAccountsBaseResponsePb);
+    rpc GetCommerceAccount    (GetCommerceAccountRequestPb)    returns (GetAccountBaseResponsePb);
+    rpc GetCommerceAccounts   (GetCommerceAccountsRequestPb)   returns (GetAccountsBaseResponsePb);
 
     // Credito o debito suelto: recargas, ajustes, reversas. Idempotente.
     rpc ApplyMovement         (ApplyMovementRequestPb)         returns (ApplyMovementBaseResponsePb);
@@ -50,7 +50,7 @@ service AccountsAndMovements {
     rpc GetMovements          (GetMovementsRequestPb)          returns (GetMovementsBaseResponsePb);
     // Historial con filtros de fecha y estado.
     rpc GetMyHistory          (GetMyHistoryRequestPb)          returns (GetMovementsBaseResponsePb);
-    rpc GetMerchantHistory    (GetMerchantHistoryRequestPb)    returns (GetMovementsBaseResponsePb);
+    rpc GetCommerceHistory    (GetCommerceHistoryRequestPb)    returns (GetMovementsBaseResponsePb);
 }
 
 // ─── Requests ────────────────────────────────────────────────────────────────
@@ -60,10 +60,10 @@ message CreateClientAccountRequestPb {
     string initial_balance = 3;  // decimal como string, 0 = sin apertura
 }
 
-message CreateMerchantAccountRequestPb {
+message CreateCommerceAccountRequestPb {
     // Sin coin_code: el comercio boliviano cobra en BOB por regla del negocio,
     // asi que no hay nada que elegir ni nada que rechazar.
-    int64  merchant_id     = 1;
+    int64  commerce_id     = 1;
     string initial_balance = 2;  // decimal como string, 0 = sin apertura
 }
 
@@ -79,12 +79,12 @@ message GetMyAccountsRequestPb {
     bool only_active = 1;
 }
 
-message GetMerchantAccountRequestPb {
-    int64 merchant_id = 1;
+message GetCommerceAccountRequestPb {
+    int64 commerce_id = 1;
 }
 
-message GetMerchantAccountsRequestPb {
-    int64 merchant_id = 1;
+message GetCommerceAccountsRequestPb {
+    int64 commerce_id = 1;
     bool  only_active = 2;
 }
 
@@ -130,8 +130,8 @@ message GetMyHistoryRequestPb {
     int32  page_size   = 5;
 }
 
-message GetMerchantHistoryRequestPb {
-    int64  merchant_id = 1;
+message GetCommerceHistoryRequestPb {
+    int64  commerce_id = 1;
     string date_from   = 2;
     string date_to     = 3;
     string status      = 4;
@@ -141,25 +141,25 @@ message GetMerchantHistoryRequestPb {
 
 // ─── Data ────────────────────────────────────────────────────────────────────
 message AccountDataPb {
-    int64  account_id = 1;
-    string number     = 2;
-    string owner_type = 3;
-    int64  owner_id   = 4;
-    int64  coin_id    = 5;
-    string coin_code  = 6;
-    string balance    = 7;
-    bool   is_active  = 8;
-    string created_at = 9;
+    int64  account_id   = 1;
+    string number       = 2;
+    string account_type = 3;
+    int64  holder_id    = 4;
+    int64  coin_id      = 5;
+    string coin_code    = 6;
+    string balance      = 7;
+    bool   is_active    = 8;
+    string created_at   = 9;
     // Vacios cuando nunca se actualizo / no esta eliminada.
-    string updated_at = 10;
-    string deleted_at = 11;
+    string updated_at   = 10;
+    string deleted_at   = 11;
 }
 
 message MovementDataPb {
     int64  movement_id       = 1;
     string account_number    = 2;
-    string owner_type        = 3;
-    int64  owner_id          = 4;
+    string account_type      = 3;
+    int64  holder_id         = 4;
     string type              = 5;  // CREDITO | DEBITO
     string status            = 6;
     string amount            = 7;  // monto en la moneda de la cuenta
@@ -171,7 +171,7 @@ message MovementDataPb {
     string exchange_rate     = 12;
     string converted_amount  = 13;
     string target_currency   = 14;
-    int64  merchant_id       = 15;  // 0 cuando el asiento no es de un pago QR
+    int64  commerce_id       = 15;  // 0 cuando el asiento no es de un pago QR
     string qr_code           = 16;
     string reference         = 17;
     string idempotency_key   = 18;
@@ -191,10 +191,10 @@ message PaymentDataPb {
     int64  movement_id            = 2;
     int64  client_id              = 3;
     string client_account_number  = 4;
-    int64  merchant_id            = 5;
+    int64  commerce_id            = 5;
     // Vacio al consultar una operacion: solo viaja al ejecutar el pago.
-    string merchant_name          = 6;
-    string merchant_account_number = 7;
+    string commerce_name          = 6;
+    string commerce_account_number = 7;
     string qr_code                = 8;
     string original_amount        = 9;   // ej: 20
     string original_currency      = 10;  // ej: USD

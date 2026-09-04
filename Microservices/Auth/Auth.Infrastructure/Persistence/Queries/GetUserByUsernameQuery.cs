@@ -23,7 +23,7 @@ public class GetUserByUsernameQuery(string username) : QuerySingleBase<UserEntit
                USUA_FECHA_CREACION_DT    AS CreatedAt,
                USUA_FECHA_ACTUALIZACION_DT AS UpdatedAt,
                USUA_FECHA_ELIMINACION_DT   AS DeletedAt
-        FROM   coin.USUARIO
+        FROM   commerce.USUARIO
         WHERE  USUA_USERNAME_VC         = @Username
           AND  USUA_FECHA_ELIMINACION_DT IS NULL";
 

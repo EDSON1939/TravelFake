@@ -1,10 +1,10 @@
 using AccountsAndMovements.Api.Grpc;
 using AccountsAndMovements.Application.Features.Accounts.Commands.ApplyMovement;
 using AccountsAndMovements.Application.Features.Accounts.Commands.CreateClientAccount;
-using AccountsAndMovements.Application.Features.Accounts.Commands.CreateMerchantAccount;
+using AccountsAndMovements.Application.Features.Accounts.Commands.CreateCommerceAccount;
 using AccountsAndMovements.Application.Features.Accounts.Queries.GetAccount;
-using AccountsAndMovements.Application.Features.Accounts.Queries.GetAccountByOwner;
-using AccountsAndMovements.Application.Features.Accounts.Queries.GetAccountsByOwner;
+using AccountsAndMovements.Application.Features.Accounts.Queries.GetAccountByHolder;
+using AccountsAndMovements.Application.Features.Accounts.Queries.GetAccountsByHolder;
 using AccountsAndMovements.Application.Features.Movements.Queries.GetHistory;
 using AccountsAndMovements.Application.Features.Movements.Queries.GetMovements;
 using AccountsAndMovements.Application.Features.Payments.Commands.ExecuteQrPayment;
@@ -14,6 +14,7 @@ using AutoMapper;
 using Core.ShareKernel.Security;
 using Grpc.Core;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using System.Globalization;
 
 namespace AccountsAndMovements.Api.Services;
@@ -38,12 +39,15 @@ public class AccountsAndMovementsService(ISender sender, IMapper mapper, ICurren
         return mapper.Map<AccountMutationBaseResponsePb>(result);
     }
 
-    public override async Task<AccountMutationBaseResponsePb> CreateMerchantAccount(
-        CreateMerchantAccountRequestPb request, ServerCallContext context)
+    // Sin token: el comercio se identifica con el CommerceId del request, no con
+    // un claim, asi que el RPC no necesita una sesion iniciada.
+    [AllowAnonymous]
+    public override async Task<AccountMutationBaseResponsePb> CreateCommerceAccount(
+        CreateCommerceAccountRequestPb request, ServerCallContext context)
     {
         var result = await sender.Send(
-            new CreateMerchantAccountCommand(
-                request.MerchantId, ParseDecimal(request.InitialBalance)),
+            new CreateCommerceAccountCommand(
+                request.CommerceId, ParseDecimal(request.InitialBalance)),
             context.CancellationToken);
 
         return mapper.Map<AccountMutationBaseResponsePb>(result);
@@ -61,7 +65,7 @@ public class AccountsAndMovementsService(ISender sender, IMapper mapper, ICurren
         GetMyAccountRequestPb request, ServerCallContext context)
     {
         var result = await sender.Send(
-            new GetAccountByOwnerQuery(AccountOwnerType.CLIENTE, ClientId(), request.CoinCode),
+            new GetAccountByHolderQuery(AccountType.CLIENT, ClientId(), request.CoinCode),
             context.CancellationToken);
 
         return mapper.Map<GetAccountBaseResponsePb>(result);
@@ -71,27 +75,27 @@ public class AccountsAndMovementsService(ISender sender, IMapper mapper, ICurren
         GetMyAccountsRequestPb request, ServerCallContext context)
     {
         var result = await sender.Send(
-            new GetAccountsByOwnerQuery(AccountOwnerType.CLIENTE, ClientId(), request.OnlyActive),
+            new GetAccountsByHolderQuery(AccountType.CLIENT, ClientId(), request.OnlyActive),
             context.CancellationToken);
 
         return mapper.Map<GetAccountsBaseResponsePb>(result);
     }
 
-    public override async Task<GetAccountBaseResponsePb> GetMerchantAccount(
-        GetMerchantAccountRequestPb request, ServerCallContext context)
+    public override async Task<GetAccountBaseResponsePb> GetCommerceAccount(
+        GetCommerceAccountRequestPb request, ServerCallContext context)
     {
         var result = await sender.Send(
-            new GetAccountByOwnerQuery(AccountOwnerType.COMERCIO, request.MerchantId, CurrencyCode.BOB),
+            new GetAccountByHolderQuery(AccountType.COMMERCE, request.CommerceId, CurrencyCode.BOB),
             context.CancellationToken);
 
         return mapper.Map<GetAccountBaseResponsePb>(result);
     }
 
-    public override async Task<GetAccountsBaseResponsePb> GetMerchantAccounts(
-        GetMerchantAccountsRequestPb request, ServerCallContext context)
+    public override async Task<GetAccountsBaseResponsePb> GetCommerceAccounts(
+        GetCommerceAccountsRequestPb request, ServerCallContext context)
     {
         var result = await sender.Send(
-            new GetAccountsByOwnerQuery(AccountOwnerType.COMERCIO, request.MerchantId, request.OnlyActive),
+            new GetAccountsByHolderQuery(AccountType.COMMERCE, request.CommerceId, request.OnlyActive),
             context.CancellationToken);
 
         return mapper.Map<GetAccountsBaseResponsePb>(result);
@@ -151,7 +155,7 @@ public class AccountsAndMovementsService(ISender sender, IMapper mapper, ICurren
     {
         var result = await sender.Send(
             new GetHistoryQuery(
-                AccountOwnerType.CLIENTE, ClientId(),
+                AccountType.CLIENT, ClientId(),
                 ParseDate(request.DateFrom), ParseDate(request.DateTo),
                 request.Status, request.PageNumber, request.PageSize),
             context.CancellationToken);
@@ -159,12 +163,12 @@ public class AccountsAndMovementsService(ISender sender, IMapper mapper, ICurren
         return mapper.Map<GetMovementsBaseResponsePb>(result);
     }
 
-    public override async Task<GetMovementsBaseResponsePb> GetMerchantHistory(
-        GetMerchantHistoryRequestPb request, ServerCallContext context)
+    public override async Task<GetMovementsBaseResponsePb> GetCommerceHistory(
+        GetCommerceHistoryRequestPb request, ServerCallContext context)
     {
         var result = await sender.Send(
             new GetHistoryQuery(
-                AccountOwnerType.COMERCIO, request.MerchantId,
+                AccountType.COMMERCE, request.CommerceId,
                 ParseDate(request.DateFrom), ParseDate(request.DateTo),
                 request.Status, request.PageNumber, request.PageSize),
             context.CancellationToken);

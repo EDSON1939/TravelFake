@@ -7,7 +7,10 @@ using System.Globalization;
 
 namespace AccountsAndMovements.Infrastructure.ExternalServices;
 
-/// <summary>Cliente gRPC del microservicio de QR.</summary>
+/// <summary>
+/// Cliente gRPC del microservicio de QR. Traduce QrDataPb -en castellano y con
+/// campos que este servicio no usa- al <see cref="QrInfo"/> del dominio.
+/// </summary>
 public class QrService(GrpcClientFactory grpcClientFactory)
     : GrpcClientFactory<Qr.Api.Grpc.Qr.QrClient>(grpcClientFactory), IQrService
 {
@@ -19,25 +22,31 @@ public class QrService(GrpcClientFactory grpcClientFactory)
     /// </summary>
     public async Task<QrInfo?> GetByCode(string code, CancellationToken ct = default)
     {
-        var response = await client.GetQrAsync(
-            new Qr.Api.Grpc.GetQrRequestPb { Code = code }, cancellationToken: ct);
+        var response = await client.GetQrByCodeAsync(
+            new Qr.Api.Grpc.GetQrByCodeRequestPb { Code = code }, cancellationToken: ct);
 
         if (response.StatusCode != ErrorCode.SUC000 || response.Data is null)
             return null;
 
-        decimal.TryParse(response.Data.Amount, NumberStyles.Number, CultureInfo.InvariantCulture, out var amount);
+        // Decimal serializado como string: siempre con punto y cultura invariante,
+        // nunca con la del proceso, o "139.20" se leeria 13920 en un server es-BO.
+        decimal.TryParse(response.Data.Monto, NumberStyles.Number,
+                         CultureInfo.InvariantCulture, out var amount);
 
+        // Vacio o no parseable = el QR no expira. TryParse ya devuelve false en
+        // ambos casos, asi que no hace falta distinguirlos.
         DateTime? expiresAt = DateTime.TryParse(
-            response.Data.ExpiresAt, CultureInfo.InvariantCulture,
+            response.Data.FechaExpiracion, CultureInfo.InvariantCulture,
             DateTimeStyles.RoundtripKind, out var parsed) ? parsed : null;
 
         return new QrInfo(
-            response.Data.Code,
-            response.Data.MerchantId,
+            response.Data.QrId,
+            response.Data.Codigo,
+            response.Data.ComercioId,
             amount,
-            response.Data.CurrencyCode.ToUpperInvariant(),
-            response.Data.Reference,
-            response.Data.Status.ToUpperInvariant(),
+            response.Data.Tipo.ToUpperInvariant(),
+            response.Data.Estado.ToUpperInvariant(),
+            response.Data.Activo,
             expiresAt);
     }
 
@@ -47,16 +56,12 @@ public class QrService(GrpcClientFactory grpcClientFactory)
     /// siendo valido. Que el QR no se cobre dos veces ya lo garantiza el indice
     /// unico de este servicio, no esta llamada.
     /// </summary>
-    public async Task<bool> MarkAsUsed(string code, string transactionCode, CancellationToken ct = default)
+    public async Task<bool> Consume(string code, CancellationToken ct = default)
     {
         try
         {
-            var response = await client.MarkQrAsUsedAsync(
-                new Qr.Api.Grpc.MarkQrAsUsedRequestPb
-                {
-                    Code            = code,
-                    TransactionCode = transactionCode
-                }, cancellationToken: ct);
+            var response = await client.ConsumeQrAsync(
+                new Qr.Api.Grpc.ConsumeQrRequestPb { Code = code }, cancellationToken: ct);
 
             return response.StatusCode == ErrorCode.SUC000;
         }

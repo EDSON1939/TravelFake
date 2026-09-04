@@ -18,14 +18,15 @@ public class ExecuteQrPaymentCommandHandlerTests
 {
     private const string QrCode         = "QR-BO-0001";
     private const string ClientAccount  = "QR0000000001";
-    private const string MerchantAccount = "QR0000000002";
+    private const string CommerceAccount = "QR0000000002";
     private const long   ClientId       = 7;
-    private const long   MerchantId     = 55;
+    private const long   CommerceId     = 55;
+    private const long   QrId           = 1;
 
     private readonly IAccountRepository  _accountRepository  = Substitute.For<IAccountRepository>();
     private readonly IMovementRepository _movementRepository = Substitute.For<IMovementRepository>();
     private readonly IClientService      _clientService      = Substitute.For<IClientService>();
-    private readonly IMerchantService    _merchantService    = Substitute.For<IMerchantService>();
+    private readonly ICommerceService    _commerceService    = Substitute.For<ICommerceService>();
     private readonly IQrService          _qrService          = Substitute.For<IQrService>();
     private readonly ICurrencyService    _currencyService    = Substitute.For<ICurrencyService>();
 
@@ -34,18 +35,18 @@ public class ExecuteQrPaymentCommandHandlerTests
     public ExecuteQrPaymentCommandHandlerTests()
     {
         _handler = new ExecuteQrPaymentCommandHandler(
-            _accountRepository, _movementRepository, _clientService, _merchantService,
+            _accountRepository, _movementRepository, _clientService, _commerceService,
             _qrService, _currencyService,
             NullLogger<ExecuteQrPaymentCommandHandler>.Instance);
 
         // Escenario del reto: Carlos paga 20 USD un QR de 139.20 BOB.
         GivenClient(new ClientInfo(ClientId, "Carlos Pérez", "carlos@mail.com", "PE", "USD", IsActive: true));
         GivenQr(Qr());
-        GivenMerchant(new MerchantInfo(MerchantId, "Café Central", "1234567", "BOB", IsActive: true));
+        GivenCommerce(new CommerceInfo(CommerceId, "Café Central", "1234567", "BOB", IsActive: true));
         GivenCurrency(new CurrencyInfo(2, "USD", "$", IsActive: true));
         GivenExchangeRate(6.96m);
         GivenAccounts();
-        GivenQrMarkedAsUsed(true);
+        GivenQrConsumed(true);
 
         _movementRepository.ExecuteQrPayment(Arg.Any<PaymentEntity>(), Arg.Any<CancellationToken>())
             .Returns(900L);
@@ -78,7 +79,7 @@ public class ExecuteQrPaymentCommandHandlerTests
         await _handler.Handle(Command(), default);
 
         captured!.ClientAccountNumber.Should().Be(ClientAccount);
-        captured.MerchantAccountNumber.Should().Be(MerchantAccount);
+        captured.CommerceAccountNumber.Should().Be(CommerceAccount);
         captured.OriginalAmount.Should().Be(20m);
         captured.ExchangeRate.Should().Be(6.96m);
         captured.ConvertedAmount.Should().Be(139.20m);
@@ -92,7 +93,7 @@ public class ExecuteQrPaymentCommandHandlerTests
     {
         await _handler.Handle(Command(), default);
 
-        await _qrService.Received(1).MarkAsUsed(QrCode, Arg.Any<string>(), Arg.Any<CancellationToken>());
+        await _qrService.Received(1).Consume(QrCode, Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -100,7 +101,7 @@ public class ExecuteQrPaymentCommandHandlerTests
     {
         // El dinero ya se movió: que el servicio de QR no responda no puede
         // convertir un pago aplicado en un error para el cliente.
-        GivenQrMarkedAsUsed(false);
+        GivenQrConsumed(false);
 
         var result = await _handler.Handle(Command(), default);
 
@@ -174,34 +175,60 @@ public class ExecuteQrPaymentCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_WhenQrIsCancelled_ReturnsQrInactive()
+    public async Task Handle_WhenQrIsDisabled_ReturnsQrInactive()
     {
-        GivenQr(Qr(status: QrStatus.CANCELLED));
+        // El contrato oficial da de baja un QR con el flag "activo", dejando el
+        // estado en ACTIVE: mirar solo el estado dejaria cobrar un QR retirado.
+        GivenQr(Qr(isActive: false));
 
         var result = await _handler.Handle(Command(), default);
 
         result.StatusCode.Should().Be(ErrorCode.QR_INACTIVE);
     }
 
-    // ── Comercio ─────────────────────────────────────────────────────────────
     [Fact]
-    public async Task Handle_WhenMerchantDoesNotExist_ReturnsMerchantNotFound()
+    public async Task Handle_WhenQrIsMultiUse_ReturnsQrTypeNotSupported()
     {
-        GivenMerchant(null);
+        // El libro mayor admite un unico DEBITO por codigo de QR
+        // (UQ_COMMERCE_MOVIMIENTO_QR), asi que un QR recurrente se rechaza de
+        // entrada en vez de cobrarse una vez y mentir en la segunda.
+        GivenQr(Qr(type: QrType.MULTIPLE));
 
         var result = await _handler.Handle(Command(), default);
 
-        result.StatusCode.Should().Be(ErrorCode.MERCHANT_NOT_FOUND);
+        result.StatusCode.Should().Be(ErrorCode.QR_TYPE_NOT_SUPPORTED);
     }
 
     [Fact]
-    public async Task Handle_WhenMerchantIsInactive_ReturnsMerchantInactive()
+    public async Task Handle_WhenQrIsMultiUse_DoesNotTouchTheLedger()
     {
-        GivenMerchant(new MerchantInfo(MerchantId, "Café Central", "1234567", "BOB", IsActive: false));
+        GivenQr(Qr(type: QrType.MULTIPLE));
+
+        await _handler.Handle(Command(), default);
+
+        await _movementRepository.DidNotReceive().ExecuteQrPayment(
+            Arg.Any<PaymentEntity>(), Arg.Any<CancellationToken>());
+    }
+
+    // ── Comercio ─────────────────────────────────────────────────────────────
+    [Fact]
+    public async Task Handle_WhenCommerceDoesNotExist_ReturnsCommerceNotFound()
+    {
+        GivenCommerce(null);
 
         var result = await _handler.Handle(Command(), default);
 
-        result.StatusCode.Should().Be(ErrorCode.MERCHANT_INACTIVE);
+        result.StatusCode.Should().Be(ErrorCode.COMMERCE_NOT_FOUND);
+    }
+
+    [Fact]
+    public async Task Handle_WhenCommerceIsInactive_ReturnsCommerceInactive()
+    {
+        GivenCommerce(new CommerceInfo(CommerceId, "Café Central", "1234567", "BOB", IsActive: false));
+
+        var result = await _handler.Handle(Command(), default);
+
+        result.StatusCode.Should().Be(ErrorCode.COMMERCE_INACTIVE);
     }
 
     // ── Moneda y conversión ──────────────────────────────────────────────────
@@ -251,8 +278,8 @@ public class ExecuteQrPaymentCommandHandlerTests
     [Fact]
     public async Task Handle_WhenClientHasNoAccountInThatCurrency_ReturnsAccountNotFound()
     {
-        _accountRepository.GetByOwnerAndCoin(
-            AccountOwnerType.CLIENTE, ClientId, "USD", Arg.Any<CancellationToken>())
+        _accountRepository.GetByHolderAndCoin(
+            AccountType.CLIENT, ClientId, "USD", Arg.Any<CancellationToken>())
             .Returns((AccountEntity?)null);
 
         var result = await _handler.Handle(Command(), default);
@@ -261,15 +288,15 @@ public class ExecuteQrPaymentCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_WhenMerchantHasNoAccount_ReturnsMerchantAccountNotFound()
+    public async Task Handle_WhenCommerceHasNoAccount_ReturnsCommerceAccountNotFound()
     {
-        _accountRepository.GetByOwnerAndCoin(
-            AccountOwnerType.COMERCIO, MerchantId, "BOB", Arg.Any<CancellationToken>())
+        _accountRepository.GetByHolderAndCoin(
+            AccountType.COMMERCE, CommerceId, "BOB", Arg.Any<CancellationToken>())
             .Returns((AccountEntity?)null);
 
         var result = await _handler.Handle(Command(), default);
 
-        result.StatusCode.Should().Be(ErrorCode.MERCHANT_ACCOUNT_NOT_FOUND);
+        result.StatusCode.Should().Be(ErrorCode.COMMERCE_ACCOUNT_NOT_FOUND);
     }
 
     [Fact]
@@ -283,8 +310,8 @@ public class ExecuteQrPaymentCommandHandlerTests
         result.StatusCode.Should().Be(ErrorCode.INSUFFICIENT_FUNDS);
         result.Data.Should().BeNull();
         // Un pago que no ocurrió no puede consumir el QR.
-        await _qrService.DidNotReceive().MarkAsUsed(
-            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
+        await _qrService.DidNotReceive().Consume(
+            Arg.Any<string>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -356,15 +383,20 @@ public class ExecuteQrPaymentCommandHandlerTests
         decimal amount = 20m, string key = "TX-2026-000001")
         => new(ClientId, QrCode, amount, "USD", key, "Pago QR en comercio");
 
-    private static QrInfo Qr(string status = QrStatus.ACTIVE, DateTime? expiresAt = null, decimal amount = 139.20m)
-        => new(QrCode, MerchantId, amount, "BOB", "REF-QR-1", status, expiresAt ?? DateTime.Now.AddHours(1));
+    private static QrInfo Qr(
+        string status     = QrStatus.ACTIVE,
+        DateTime? expiresAt = null,
+        decimal amount    = 139.20m,
+        bool isActive     = true,
+        string type       = QrType.UNICO)
+        => new(QrId, QrCode, CommerceId, amount, type, status, isActive, expiresAt ?? DateTime.Now.AddHours(1));
 
     private static MovementEntity AppliedMovement() => new()
     {
         MovementId       = 900L,
         AccountNumber    = ClientAccount,
-        OwnerType        = AccountOwnerType.CLIENTE,
-        OwnerId          = ClientId,
+        AccountType      = AccountType.CLIENT,
+        HolderId         = ClientId,
         Type             = MovementType.DEBITO,
         Status           = MovementStatus.COMPLETED,
         Amount           = 20m,
@@ -375,9 +407,9 @@ public class ExecuteQrPaymentCommandHandlerTests
         ExchangeRate     = 6.96m,
         ConvertedAmount  = 139.20m,
         TargetCurrency   = "BOB",
-        MerchantId       = MerchantId,
+        CommerceId       = CommerceId,
         QrCode           = QrCode,
-        Reference        = "REF-QR-1",
+        Reference        = "QR-1",
         IdempotencyKey   = "TX-2026-000001",
         TransactionCode  = "d3f1b6f0-0000-4000-8000-000000000001",
         CreatedAt        = DateTime.Now
@@ -389,8 +421,8 @@ public class ExecuteQrPaymentCommandHandlerTests
     private void GivenQr(QrInfo? qr)
         => _qrService.GetByCode(QrCode, Arg.Any<CancellationToken>()).Returns(qr);
 
-    private void GivenMerchant(MerchantInfo? merchant)
-        => _merchantService.GetById(MerchantId, Arg.Any<CancellationToken>()).Returns(merchant);
+    private void GivenCommerce(CommerceInfo? commerce)
+        => _commerceService.GetById(CommerceId, Arg.Any<CancellationToken>()).Returns(commerce);
 
     private void GivenCurrency(CurrencyInfo? currency)
         => _currencyService.GetByCode(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(currency);
@@ -398,26 +430,26 @@ public class ExecuteQrPaymentCommandHandlerTests
     private void GivenExchangeRate(decimal rate)
         => _currencyService.GetExchangeRate("USD", "BOB", Arg.Any<CancellationToken>()).Returns(rate);
 
-    private void GivenQrMarkedAsUsed(bool marked)
-        => _qrService.MarkAsUsed(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
-            .Returns(marked);
+    private void GivenQrConsumed(bool consumed)
+        => _qrService.Consume(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(consumed);
 
     private void GivenAccounts()
     {
-        _accountRepository.GetByOwnerAndCoin(
-            AccountOwnerType.CLIENTE, ClientId, "USD", Arg.Any<CancellationToken>())
+        _accountRepository.GetByHolderAndCoin(
+            AccountType.CLIENT, ClientId, "USD", Arg.Any<CancellationToken>())
             .Returns(new AccountEntity
             {
-                AccountId = 1, Number = ClientAccount, OwnerType = AccountOwnerType.CLIENTE,
-                OwnerId = ClientId, CoinId = 2, CoinCode = "USD", Balance = 500m, IsActive = true
+                AccountId = 1, Number = ClientAccount, AccountType = AccountType.CLIENT,
+                HolderId = ClientId, CoinId = 2, CoinCode = "USD", Balance = 500m, IsActive = true
             });
 
-        _accountRepository.GetByOwnerAndCoin(
-            AccountOwnerType.COMERCIO, MerchantId, "BOB", Arg.Any<CancellationToken>())
+        _accountRepository.GetByHolderAndCoin(
+            AccountType.COMMERCE, CommerceId, "BOB", Arg.Any<CancellationToken>())
             .Returns(new AccountEntity
             {
-                AccountId = 2, Number = MerchantAccount, OwnerType = AccountOwnerType.COMERCIO,
-                OwnerId = MerchantId, CoinId = 1, CoinCode = "BOB", Balance = 0m, IsActive = true
+                AccountId = 2, Number = CommerceAccount, AccountType = AccountType.COMMERCE,
+                HolderId = CommerceId, CoinId = 1, CoinCode = "BOB", Balance = 0m, IsActive = true
             });
     }
 
@@ -439,12 +471,12 @@ public class ExecuteQrPaymentCommandHandlerTests
         GivenQr(Qr(amount: 0m));
         GivenCurrency(new CurrencyInfo(1, "BOB", "Bs", IsActive: true));
 
-        _accountRepository.GetByOwnerAndCoin(
-            AccountOwnerType.CLIENTE, ClientId, "BOB", Arg.Any<CancellationToken>())
+        _accountRepository.GetByHolderAndCoin(
+            AccountType.CLIENT, ClientId, "BOB", Arg.Any<CancellationToken>())
             .Returns(new AccountEntity
             {
-                AccountId = 1, Number = ClientAccount, OwnerType = AccountOwnerType.CLIENTE,
-                OwnerId = ClientId, CoinId = 1, CoinCode = "BOB", Balance = balance, IsActive = true
+                AccountId = 1, Number = ClientAccount, AccountType = AccountType.CLIENT,
+                HolderId = ClientId, CoinId = 1, CoinCode = "BOB", Balance = balance, IsActive = true
             });
 
         var gate = new object();

@@ -1,15 +1,17 @@
+using Core.Infrastructure.Audit;
 using Core.Infrastructure.Database.Commands;
 using Microsoft.Data.SqlClient;
 using System.Data;
 
 namespace Auth.Infrastructure.Persistence.Commands;
 
-public class DeleteUserCommand(long userId) : SqlCommandBase<long>
+public class DeleteUserCommand(long userId, IAuditContext audit) : SqlCommandBase<long>
 {
-    public override string Name => "coin.DELETE_USUARIO";
+    public override string Name => "commerce.DELETE_USUARIO";
 
     public override IEnumerable<SqlParameter>? Parameters =>
     [
         new() { ParameterName = "@USUA_ID_IT", SqlDbType = SqlDbType.BigInt, Value = userId },
+        ..AuditParameters.For(audit),
     ];
 }

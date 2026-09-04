@@ -48,8 +48,8 @@ public class CreateClientAccountCommandHandlerTests
         await _handler.Handle(new CreateClientAccountCommand(7, " pen ", 2500m), default);
 
         // El tipo de titular ya no viene del request: lo fija el propio comando.
-        captured!.OwnerType.Should().Be(AccountOwnerType.CLIENTE);
-        captured.OwnerId.Should().Be(7);
+        captured!.AccountType.Should().Be(AccountType.CLIENT);
+        captured.HolderId.Should().Be(7);
         captured.CoinId.Should().Be(3);
         captured.CoinCode.Should().Be("PEN");
         captured.Balance.Should().Be(2500m);

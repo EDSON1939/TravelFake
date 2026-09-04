@@ -1,15 +1,16 @@
 namespace AccountsAndMovements.Domain.Entities;
 
 /// <summary>
-/// Datos ya validados y convertidos que se le entregan a pay.EJECUTAR_PAGO_QR.
-/// Cuando llega aca no queda ninguna decision de negocio pendiente salvo el
-/// saldo, que solo puede resolverse con la fila de la cuenta bloqueada.
+/// Datos ya validados y convertidos que se le entregan a
+/// commerce.EJECUTAR_PAGO_QR. Cuando llega aca no queda ninguna decision de
+/// negocio pendiente salvo el saldo, que solo puede resolverse con la fila de
+/// la cuenta bloqueada.
 /// </summary>
 public class PaymentEntity
 {
     public string  ClientAccountNumber   { get; set; } = string.Empty;
-    public string  MerchantAccountNumber { get; set; } = string.Empty;
-    public long    MerchantId            { get; set; }
+    public string  CommerceAccountNumber { get; set; } = string.Empty;
+    public long    CommerceId            { get; set; }
     public string  QrCode                { get; set; } = string.Empty;
 
     /// <summary>Monto y moneda con los que paga el cliente (ej: 20 USD).</summary>

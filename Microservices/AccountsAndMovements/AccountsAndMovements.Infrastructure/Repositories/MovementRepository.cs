@@ -15,10 +15,10 @@ public class MovementRepository(IQuery query, ICommand command, IAuditContext au
         => await query.QuerySqlAsync(new GetMovementsByAccountQuery(accountNumber, pageNumber, pageSize), ct) ?? [];
 
     public async Task<IEnumerable<MovementEntity>> GetHistory(
-        string ownerType, long ownerId, DateTime? from, DateTime? to,
+        string accountType, long holderId, DateTime? from, DateTime? to,
         string? status, int pageNumber, int pageSize, CancellationToken ct = default)
         => await query.QuerySqlAsync(
-            new GetHistoryQuery(ownerType, ownerId, from, to, status, pageNumber, pageSize), ct) ?? [];
+            new GetHistoryQuery(accountType, holderId, from, to, status, pageNumber, pageSize), ct) ?? [];
 
     public async Task<MovementEntity?> GetByIdempotencyKey(string idempotencyKey, CancellationToken ct = default)
         => await query.QuerySqlAsync(new GetMovementByIdempotencyQuery(idempotencyKey), ct);

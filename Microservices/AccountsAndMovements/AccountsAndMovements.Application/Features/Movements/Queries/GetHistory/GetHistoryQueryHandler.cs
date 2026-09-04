@@ -12,8 +12,8 @@ public class GetHistoryQueryHandler(IMovementRepository repository)
         GetHistoryQuery request, CancellationToken ct)
     {
         var entities = await repository.GetHistory(
-            request.OwnerType.Trim().ToUpper(),
-            request.OwnerId,
+            request.AccountType.Trim().ToUpper(),
+            request.HolderId,
             request.DateFrom,
             ExclusiveUpperBound(request.DateTo),
             string.IsNullOrWhiteSpace(request.Status) ? null : request.Status.Trim().ToUpper(),

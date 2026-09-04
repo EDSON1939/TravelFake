@@ -11,8 +11,8 @@ internal static class MovementProjection
         SELECT m.MOVI_ID_IT               AS MovementId,
                m.MOVI_CUENTA_ID_IT        AS AccountId,
                c.CUEN_NUMERO_VC           AS AccountNumber,
-               c.CUEN_TITULAR_TIPO_VC     AS OwnerType,
-               c.CUEN_TITULAR_ID_IT       AS OwnerId,
+               c.CUEN_TITULAR_TIPO_VC     AS AccountType,
+               c.CUEN_TITULAR_ID_IT       AS HolderId,
                m.MOVI_TIPO_VC             AS Type,
                m.MOVI_ESTADO_VC           AS Status,
                m.MOVI_MONTO_DE            AS Amount,
@@ -23,13 +23,13 @@ internal static class MovementProjection
                m.MOVI_TIPO_CAMBIO_DE      AS ExchangeRate,
                m.MOVI_MONTO_DESTINO_DE    AS ConvertedAmount,
                m.MOVI_MONEDA_DESTINO_VC   AS TargetCurrency,
-               m.MOVI_COMERCIO_ID_IT      AS MerchantId,
+               m.MOVI_COMERCIO_ID_IT      AS CommerceId,
                m.MOVI_QR_CODIGO_VC        AS QrCode,
                m.MOVI_REFERENCIA_VC       AS Reference,
                m.MOVI_IDEMPOTENCIA_VC     AS IdempotencyKey,
                m.MOVI_TRANSACCION_VC      AS TransactionCode,
                m.MOVI_DESCRIPCION_VC      AS Description,
                m.MOVI_FECHA_CREACION_DT   AS CreatedAt
-        FROM   pay.MOVIMIENTO m
-        INNER JOIN pay.CUENTA c ON c.CUEN_ID_IT = m.MOVI_CUENTA_ID_IT";
+        FROM   commerce.MOVIMIENTO m
+        INNER JOIN commerce.CUENTA c ON c.CUEN_ID_IT = m.MOVI_CUENTA_ID_IT";
 }

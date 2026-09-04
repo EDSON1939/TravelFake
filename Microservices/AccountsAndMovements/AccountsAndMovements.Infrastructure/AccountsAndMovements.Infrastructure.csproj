@@ -18,7 +18,7 @@
   <ItemGroup>
     <Protobuf Include="Protos\client.proto" GrpcServices="Client"
               AdditionalImportDirs="..\..\..\YastaCoin\Shared\Core.Domain\Grpc\Protobuf\" />
-    <Protobuf Include="Protos\merchant.proto" GrpcServices="Client"
+    <Protobuf Include="Protos\commerce.proto" GrpcServices="Client"
               AdditionalImportDirs="..\..\..\YastaCoin\Shared\Core.Domain\Grpc\Protobuf\" />
     <Protobuf Include="Protos\qr.proto" GrpcServices="Client"
               AdditionalImportDirs="..\..\..\YastaCoin\Shared\Core.Domain\Grpc\Protobuf\" />

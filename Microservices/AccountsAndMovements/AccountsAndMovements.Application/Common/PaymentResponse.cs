@@ -5,7 +5,7 @@ namespace AccountsAndMovements.Application.Common;
 /// cambio y monto convertido- porque es lo que el reto pide mostrar y lo que
 /// quedo grabado en el asiento.
 /// </summary>
-/// <param name="MerchantName">
+/// <param name="CommerceName">
 /// Solo viene con nombre al ejecutar el pago, que es cuando se valido al
 /// comercio. Al consultar una operacion se responde vacio: esa consulta se
 /// resuelve con el libro mayor y no depende de que Comercios este arriba.
@@ -19,9 +19,9 @@ public record PaymentResponse(
     long     MovementId,
     long     ClientId,
     string   ClientAccountNumber,
-    long     MerchantId,
-    string   MerchantName,
-    string   MerchantAccountNumber,
+    long     CommerceId,
+    string   CommerceName,
+    string   CommerceAccountNumber,
     string   QrCode,
     decimal  OriginalAmount,
     string   OriginalCurrency,

@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" type="device">
+  <diagram id="aplicar-movimiento" name="ApplyMovement">
+<mxGraphModel dx="1150" dy="1300" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1150" pageHeight="1300" math="0" shadow="0">
+  <root>
+    <mxCell id="0" />
+    <mxCell id="1" parent="0" />
+
+    <mxCell id="tit" value="ApplyMovement — credito o debito sobre una cuenta" style="text;html=1;fontSize=20;fontStyle=1;align=center;verticalAlign=middle;fontColor=#1F3A34;" vertex="1" parent="1">
+      <mxGeometry x="60" y="20" width="1030" height="30" as="geometry" />
+    </mxCell>
+    <mxCell id="sub" value="Recargas, ajustes y reversas. El pago QR no pasa por aca: tiene su propia operacion atomica de dos patas (diagrama 01)" style="text;html=1;fontSize=12;align=center;fontColor=#3D4A47;" vertex="1" parent="1">
+      <mxGeometry x="60" y="52" width="1030" height="20" as="geometry" />
+    </mxCell>
+
+    <mxCell id="n1" value="ApplyMovement&#10;account_number · type · amount&#10;reference · idempotency_key · description" style="ellipse;whiteSpace=wrap;html=1;fillColor=#DFEEEA;strokeColor=#0C5C52;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="320" y="90" width="320" height="70" as="geometry" />
+    </mxCell>
+
+    <mxCell id="n2" value="Handler — normaliza el numero de cuenta y arma el asiento.&#10;Toda la mecanica de saldo vive en el SP: aca no se lee saldo para decidir" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#3D4A47;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="280" y="180" width="400" height="50" as="geometry" />
+    </mxCell>
+
+    <mxCell id="zona" value="commerce.APLICAR_MOVIMIENTO — UNA transaccion" style="rounded=0;whiteSpace=wrap;html=1;dashed=1;dashPattern=8 8;strokeColor=#0C5C52;strokeWidth=2;fillColor=none;verticalAlign=top;fontSize=11;fontColor=#0C5C52;fontStyle=1;align=center;spacingTop=6;" vertex="1" parent="1">
+      <mxGeometry x="140" y="250" width="880" height="800" as="geometry" />
+    </mxCell>
+
+    <mxCell id="s1" value="BEGIN TRAN&#10;SELECT commerce.CUENTA WITH (UPDLOCK, HOLDLOCK)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#DFEEEA;strokeColor=#0C5C52;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="300" y="290" width="320" height="50" as="geometry" />
+    </mxCell>
+
+    <mxCell id="d1" value="¿La cuenta existe?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#3D4A47;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="300" y="365" width="320" height="60" as="geometry" />
+    </mxCell>
+
+    <mxCell id="d2" value="¿Ya hay un asiento con esa&#10;clave de idempotencia?&#10;(la clave es unica en todo el sistema:&#10;se busca sin filtrar por cuenta)" style="rhombus;whiteSpace=wrap;html=1;fillColor=#F7EEDA;strokeColor=#835710;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="300" y="450" width="320" height="90" as="geometry" />
+    </mxCell>
+
+    <mxCell id="d3" value="¿Es el MISMO movimiento?&#10;misma cuenta · mismo tipo · mismo monto" style="rhombus;whiteSpace=wrap;html=1;fillColor=#F7EEDA;strokeColor=#835710;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="680" y="450" width="320" height="90" as="geometry" />
+    </mxCell>
+
+    <mxCell id="k1" value="Reintento&#10;devuelve el id del&#10;asiento original&#10;NO aplica nada" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E1F0E6;strokeColor=#1D6B3B;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="680" y="560" width="150" height="70" as="geometry" />
+    </mxCell>
+
+    <mxCell id="k2" value="Clave reusada&#10;para otra cosa&#10;→ -9" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F6E8E2;strokeColor=#9B3C23;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="850" y="560" width="150" height="70" as="geometry" />
+    </mxCell>
+
+    <mxCell id="d4" value="¿La cuenta esta activa?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#3D4A47;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="300" y="560" width="320" height="60" as="geometry" />
+    </mxCell>
+
+    <mxCell id="d5" value="¿Es DEBITO y el saldo&#10;alcanza para el monto?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#3D4A47;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="300" y="645" width="320" height="70" as="geometry" />
+    </mxCell>
+
+    <mxCell id="early" value="Salidas tempranas — COMMIT y RETURN sin escribir nada&#10;&#10;-1  la cuenta no existe&#10;-2  la cuenta esta inactiva&#10;-3  saldo insuficiente" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F6E8E2;strokeColor=#9B3C23;fontSize=10;align=left;spacingLeft=10;" vertex="1" parent="1">
+      <mxGeometry x="680" y="655" width="320" height="90" as="geometry" />
+    </mxCell>
+
+    <mxCell id="s2" value="INSERT en commerce.MOVIMIENTO&#10;estado COMPLETED · tipo de cambio 1 · sin conversion" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#DFEEEA;strokeColor=#0C5C52;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="280" y="755" width="360" height="45" as="geometry" />
+    </mxCell>
+
+    <mxCell id="s3" value="aud.REGISTRAR_AUDITORIA · MOVIMIENTO · INSERT" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#EAF0EE;strokeColor=#6A7975;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="280" y="810" width="360" height="32" as="geometry" />
+    </mxCell>
+
+    <mxCell id="s4" value="UPDATE commerce.CUENTA — saldo posterior" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#DFEEEA;strokeColor=#0C5C52;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="280" y="852" width="360" height="32" as="geometry" />
+    </mxCell>
+
+    <mxCell id="s5" value="aud.REGISTRAR_AUDITORIA · CUENTA · UPDATE&#10;antes y despues, en JSON" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#EAF0EE;strokeColor=#6A7975;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="280" y="894" width="360" height="38" as="geometry" />
+    </mxCell>
+
+    <mxCell id="s6" value="COMMIT → id del asiento" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#DFEEEA;strokeColor=#0C5C52;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="320" y="945" width="280" height="35" as="geometry" />
+    </mxCell>
+
+    <mxCell id="catch" value="CATCH 2601 / 2627&#10;&#10;Carrera contra UQ_COMMERCE_MOVIMIENTO_IDEMPOTENCIA:&#10;otro hilo aplico la misma clave entre nuestra lectura y&#10;nuestro INSERT. Vuelve a mirar el asiento con el MISMO&#10;criterio de arriba y devuelve su id, o -9. Una carrera&#10;perdida no es un error: el resultado correcto sigue&#10;siendo el id de ese asiento." style="rounded=1;whiteSpace=wrap;html=1;dashed=1;fillColor=#F7EEDA;strokeColor=#835710;fontSize=10;align=left;spacingLeft=10;verticalAlign=top;spacingTop=6;" vertex="1" parent="1">
+      <mxGeometry x="680" y="790" width="320" height="145" as="geometry" />
+    </mxCell>
+
+    <mxCell id="map" value="El handler traduce el codigo que devolvio el SP" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#EAF0EE;strokeColor=#6A7975;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="330" y="1080" width="400" height="40" as="geometry" />
+    </mxCell>
+
+    <mxCell id="ok" value="id &gt; 0&#10;lee la cuenta para devolver el saldo&#10;ya actualizado · SUC000" style="ellipse;whiteSpace=wrap;html=1;fillColor=#E1F0E6;strokeColor=#1D6B3B;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="140" y="1155" width="330" height="80" as="geometry" />
+    </mxCell>
+
+    <mxCell id="errs" value="-1  ACCOUNT_NOT_FOUND&#10;-2  ACCOUNT_INACTIVE&#10;-3  INSUFFICIENT_FUNDS&#10;-9  DUPLICATE_TRANSACTION&#10;cualquier otro  →  MOVEMENT_FAILED" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F6E8E2;strokeColor=#9B3C23;fontSize=10;align=left;spacingLeft=12;" vertex="1" parent="1">
+      <mxGeometry x="560" y="1155" width="430" height="80" as="geometry" />
+    </mxCell>
+
+    <mxCell id="a1" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#3D4A47;" edge="1" parent="1" source="n1" target="n2"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="a2" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#3D4A47;" edge="1" parent="1" source="n2" target="s1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="a3" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#0C5C52;" edge="1" parent="1" source="s1" target="d1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="a4" value="si" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#0C5C52;fontSize=10;" edge="1" parent="1" source="d1" target="d2"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="a5" value="si" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#835710;fontSize=10;" edge="1" parent="1" source="d2" target="d3"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="a6" value="si" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#1D6B3B;fontSize=10;" edge="1" parent="1" source="d3" target="k1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="a7" value="no" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#9B3C23;fontSize=10;" edge="1" parent="1" source="d3" target="k2"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="a8" value="no" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#0C5C52;fontSize=10;" edge="1" parent="1" source="d2" target="d4"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="a9" value="si" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#0C5C52;fontSize=10;" edge="1" parent="1" source="d4" target="d5"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="a10" value="si" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#0C5C52;fontSize=10;" edge="1" parent="1" source="d5" target="s2"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="a11" value="no existe" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#9B3C23;fontSize=10;" edge="1" parent="1" source="d1" target="early"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="a12" value="inactiva" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#9B3C23;fontSize=10;" edge="1" parent="1" source="d4" target="early"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="a13" value="no alcanza" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#9B3C23;fontSize=10;" edge="1" parent="1" source="d5" target="early"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="a14" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#0C5C52;" edge="1" parent="1" source="s2" target="s3"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="a15" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#0C5C52;" edge="1" parent="1" source="s3" target="s4"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="a16" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#0C5C52;" edge="1" parent="1" source="s4" target="s5"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="a17" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#0C5C52;" edge="1" parent="1" source="s5" target="s6"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="a18" value="violacion de la clave unica" style="edgeStyle=orthogonalEdgeStyle;html=1;dashed=1;strokeColor=#835710;fontSize=10;" edge="1" parent="1" source="s2" target="catch"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="a19" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#3D4A47;" edge="1" parent="1" source="s6" target="map"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="a20" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#1D6B3B;" edge="1" parent="1" source="map" target="ok"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="a21" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#9B3C23;" edge="1" parent="1" source="map" target="errs"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+  </root>
+</mxGraphModel>
+  </diagram>
+</mxfile>

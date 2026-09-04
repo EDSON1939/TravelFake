@@ -21,7 +21,7 @@ public class IdempotencyScopeTests
     private readonly IAccountRepository  _accountRepository  = Substitute.For<IAccountRepository>();
     private readonly IMovementRepository _movementRepository = Substitute.For<IMovementRepository>();
     private readonly IClientService      _clientService      = Substitute.For<IClientService>();
-    private readonly IMerchantService    _merchantService    = Substitute.For<IMerchantService>();
+    private readonly ICommerceService    _commerceService    = Substitute.For<ICommerceService>();
     private readonly IQrService          _qrService          = Substitute.For<IQrService>();
     private readonly ICurrencyService    _currencyService    = Substitute.For<ICurrencyService>();
 
@@ -29,7 +29,7 @@ public class IdempotencyScopeTests
 
     public IdempotencyScopeTests()
         => _paymentHandler = new ExecuteQrPaymentCommandHandler(
-            _accountRepository, _movementRepository, _clientService, _merchantService,
+            _accountRepository, _movementRepository, _clientService, _commerceService,
             _qrService, _currencyService,
             NullLogger<ExecuteQrPaymentCommandHandler>.Instance);
 
@@ -42,8 +42,8 @@ public class IdempotencyScopeTests
             .Returns(new MovementEntity
             {
                 MovementId     = 500,
-                OwnerId        = 99,
-                OwnerType      = AccountOwnerType.CLIENTE,
+                HolderId       = 99,
+                AccountType    = AccountType.CLIENT,
                 Type           = MovementType.DEBITO,
                 QrCode         = "QR-OTRO",
                 OriginalAmount = 20m,
@@ -69,8 +69,8 @@ public class IdempotencyScopeTests
             .Returns(new MovementEntity
             {
                 MovementId     = 501,
-                OwnerId        = 7,
-                OwnerType      = AccountOwnerType.CLIENTE,
+                HolderId       = 7,
+                AccountType    = AccountType.CLIENT,
                 Type           = MovementType.CREDITO,
                 QrCode         = null,
                 OriginalAmount = 100m,
@@ -121,16 +121,16 @@ public class IdempotencyScopeTests
         _clientService.GetById(7, Arg.Any<CancellationToken>())
             .Returns(new ClientInfo(7, "Carlos Pérez", "c@mail.com", "PE", "USD", IsActive: true));
         _qrService.GetByCode("QR-BO-0001", Arg.Any<CancellationToken>())
-            .Returns(new QrInfo("QR-BO-0001", 55, 139.20m, "BOB", "REF", QrStatus.ACTIVE,
+            .Returns(new QrInfo(1, "QR-BO-0001", 55, 139.20m, QrType.UNICO, QrStatus.ACTIVE, true,
                 DateTime.Now.AddHours(1)));
-        _merchantService.GetById(55, Arg.Any<CancellationToken>())
-            .Returns(new MerchantInfo(55, "Café Central", "123", "BOB", IsActive: true));
+        _commerceService.GetById(55, Arg.Any<CancellationToken>())
+            .Returns(new CommerceInfo(55, "Café Central", "123", "BOB", IsActive: true));
         _currencyService.GetByCode(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(new CurrencyInfo(2, "USD", "$", IsActive: true));
         _currencyService.GetExchangeRate("USD", "BOB", Arg.Any<CancellationToken>()).Returns(6.96m);
-        _accountRepository.GetByOwnerAndCoin(AccountOwnerType.CLIENTE, 7, "USD", Arg.Any<CancellationToken>())
+        _accountRepository.GetByHolderAndCoin(AccountType.CLIENT, 7, "USD", Arg.Any<CancellationToken>())
             .Returns(new AccountEntity { Number = "QR0000000001", CoinCode = "USD", Balance = 500m, IsActive = true });
-        _accountRepository.GetByOwnerAndCoin(AccountOwnerType.COMERCIO, 55, "BOB", Arg.Any<CancellationToken>())
+        _accountRepository.GetByHolderAndCoin(AccountType.COMMERCE, 55, "BOB", Arg.Any<CancellationToken>())
             .Returns(new AccountEntity { Number = "QR0000000002", CoinCode = "BOB", IsActive = true });
     }
 }
